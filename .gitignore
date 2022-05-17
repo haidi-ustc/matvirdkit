@@ -1,0 +1,13 @@
+build/*
+dist/
+*.egg-info/
+test
+*.eggs/
+*log
+*/__pycache__
+*/*/__pycache__
+*/dep
+*/_version.py
+*/_date.py
+check
+tmp

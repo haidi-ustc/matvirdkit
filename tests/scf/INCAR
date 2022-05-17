@@ -1,0 +1,34 @@
+#Parameters
+ISPIN   =  1
+PREC    =  Normal
+ISART   =  0
+ICHARG  =  2
+#Electronic Relaxation 
+ENCUT   =  500
+NELM    =  100
+NELMIN  =  6
+NELMDL  =  -5
+EDIFF   =  1e-05
+LREAL   =  False
+ALGO    =  Normal  # or normal
+#Ionic relaxation
+IBRION  =   2
+POTIM   =   0.25
+ISIF    =   2
+EDIFFG  =  -0.01
+ISYM    =   2
+NSW     =   0
+ISMEAR  =   0   # or 1
+SIGMA   =   0.05
+# Write flags
+LWAVE    =  T
+LCHARG   =  T
+#parallel related
+#KPAR   = 16
+NPAR    =  6
+KGAMMA  = False
+
+LELF   =  .TRUE.
+# 
+#IVDW = 10
+LORBIT = 10
