@@ -1,5 +1,6 @@
 """ Core definition of a VASP Task Document """
 import os
+import shutil
 from pprint import pprint
 from datetime import datetime
 from functools import lru_cache, partial
@@ -18,7 +19,7 @@ from matvirdkit.model.vasp.calc_types.enums import CalcType, RunType, TaskType
 from matvirdkit.model.vasp.calc_types.utils import calc_type, run_type,  task_type
 from matvirdkit.builder.vasp.outputs import VaspOutputs
 from matvirdkit.model.common import JFData
-from matvirdkit.model.utils import transfer_file
+from matvirdkit.model.utils import transfer_file,sha1encode,task_tag
 
 class Status(ValueEnum):
     """
@@ -63,13 +64,13 @@ class InputData(BaseModel) :
          return cls(**vi.as_dict())
   
 class OutputData(BaseModel):
-    VASPRUN: JFData = Field({},description="vasprun file, json_id, file_id")
-    OSZICAR: JFData = Field({},description="OSZICAR file, json_id, file_id")
-    OUTCAR:  JFData = Field({},description="OUTCAR file, json_id, file_id")
-    CONTCAR: JFData = Field({},description="CONTCAR file, json_id, file_id")
-    PROCAR:  JFData = Field({},description="PROCAR file, json_id, file_id")
-    ELFCAR:  JFData = Field({},description="ELFCAR file, json_id, file_id")
-    LOCPOT:  JFData = Field({},description="LOCPOT file, json_id, file_id")
+    VASPRUN: JFData = Field(JFData(),description="vasprun file, json_id, file_id")
+    OSZICAR: JFData = Field(JFData(),description="OSZICAR file, json_id, file_id")
+    OUTCAR:  JFData = Field(JFData(),description="OUTCAR file, json_id, file_id")
+    CONTCAR: JFData = Field(JFData(),description="CONTCAR file, json_id, file_id")
+    PROCAR:  JFData = Field(JFData(),description="PROCAR file, json_id, file_id")
+    ELFCAR:  JFData = Field(JFData(),description="ELFCAR file, json_id, file_id")
+    LOCPOT:  JFData = Field(JFData(),description="LOCPOT file, json_id, file_id")
     @classmethod
     def from_directory(cls,
                    task_dir:str,
@@ -253,12 +254,20 @@ class TaskDocument(StructureMetadata):
     @classmethod
     def from_directory(
         cls,
-        task_dir: str,
         task_id: str,
+        task_dir: str,
         dst_dir: str,
         f_inputs : List[str]= [],
         f_outputs :  List[str] = []
     ) -> "TaskDocument":
+        if task_tag(task_dir,status='check'):
+           tag=loadfn(os.path.join(task_dir,'tag.json'))
+           f_task=os.path.join(tag['path'],'task.json')
+           if os.path.isfile(f_task):
+              return cls(**loadfn(os.path.join(tag['path'],'task.json'),cls=None))
+           else:
+              pass
+
         f_inputs = f_inputs if f_inputs else ['INCAR','KPOINTS','POTCAR','POSCAR'],
         f_outputs = f_outputs if f_outputs else  ['vasprun.xml','OSZICAR','OUTCAR','CONTCAR']
         
@@ -322,6 +331,7 @@ class TaskDocument(StructureMetadata):
          "last_updated": datetime.now()
          }
         d.update(structure_meta)
+    
         return cls(**d)
            
 if __name__== '__main__':
@@ -329,12 +339,25 @@ if __name__== '__main__':
    from matvirdkit.model.utils import jsanitize,ValueEnum
    from matvirdkit.model.utils import test_path,create_path
    from monty.serialization import loadfn,dumpfn
-   create_path('output')
+   from uuid import uuid4
+   out_dir=os.path.join('tasks',str(uuid4()))
+   print('we create dir: %s'%(out_dir))
+   create_path(out_dir)
    relax_dir=os.path.join(test_path('..'),'relax')
-   scf_dir=os.path.join(test_path('..'),'scf')
-   td1=TaskDocument.from_directory(task_id='t-1',task_dir=relax_dir,dst_dir='output')
-   dumpfn(jsanitize(td1),'task.json',indent=4)
-   #od=OutputData.from_directory(task_dir='./calc_types/relax/', dst_dir='output')
-   #dumpfn(jsanitize(od),'od.json',indent=4)
-   
+   td=TaskDocument.from_directory(task_id='t-1',task_dir=relax_dir,dst_dir=out_dir)
+   td=jsanitize(td)
+   encode=sha1encode(td['input'])
+   encode_dir=os.path.join('tasks',encode)
+   if os.path.isdir(encode_dir):
+      print('we delete dir: %s'%(out_dir))
+      shutil.rmtree(out_dir)
+   else:
+      print('we rename dir: %s to %s'%(out_dir,encode_dir))
+      shutil.move(out_dir,encode_dir)
+      info={'path':os.path.abspath(out_dir.replace(out_dir,encode_dir)),
+             'encode': encode}
+      dumpfn(td,os.path.join(encode_dir,'task.json'),indent=4)
+      task_tag(relax_dir,status='write',info=info)
+ 
+   print('finished!')
 
