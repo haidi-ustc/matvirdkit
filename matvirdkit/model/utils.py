@@ -7,11 +7,12 @@ from typing import Dict, Iterator, List, Tuple
 import os
 from monty.shutil import compress_file
 import shutil
+from shutil import SameFileError
 from hashlib import sha1
 import bson
 import numpy as np
 from monty.json import MSONable
-from monty.serialization import loadfn
+from monty.serialization import loadfn,dumpfn
 from pydantic import BaseModel
 from pymatgen.analysis.structure_matcher import ElementComparator, StructureMatcher
 from pymatgen.core.structure import Structure
@@ -30,6 +31,26 @@ Tensor = Tuple[VoigtVector, VoigtVector, VoigtVector]
 Tensor.__doc__ = "Rank 3 real space tensor in Voigt notation"  # type: ignore
 ElasticTensor = Tuple[VoigtVector, VoigtVector, VoigtVector,VoigtVector, VoigtVector, VoigtVector]
 ElasticTensor.__doc__ = "Rank 6 real space tensor in Voigt notation"  # type: ignore
+
+def task_tag(task_dir,status='write',info={}):
+    if status=='write':
+       dumpfn(info,os.path.join(task_dir,'tag.json')),
+    elif status=='check':
+       if os.path.isfile(os.path.join(task_dir,'tag.json')):
+          return True
+       else:
+          return False
+    elif status=='remove':
+       if os.path.isfile(os.path.join(task_dir,'tag.json')):
+          os.remove(os.path.join(task_dir,'tag.json'))
+          return None
+       else:
+          return None  
+    else:
+       return None  
+    
+def sha1encode(data):
+    return  sha1(str(data).encode('utf-8')).hexdigest()
 
 def get_sg(struc, symprec=SYMPREC) -> int:
     """helper function to get spacegroup with a loose tolerance"""
@@ -198,28 +219,50 @@ def create_path(path, backup=False):
     os.makedirs(path)
     return path
 
-def transfer_file(fname, src_path, dst_path, abs_path = False, compress = True, compression='gz'):
+def transfer_file(fname, src_path, dst_path, rename = True, path_type = 'base', compress = True, compression='gz'):
+    assert path_type in ['relative', 'base', 'abs'] 
+    # relative    ./dataset.bms/bms-1/01a77054-63e1-428a-b016-9619620792d4.json
+    # base   01a77054-63e1-428a-b016-9619620792d4.json
+    # abs   /home/wang/dev/dataset.bms/bms-1/01a77054-63e1-428a-b016-9619620792d4.json  
+    abs_path=False
+    dst_fname = os.path.join(dst_path,fname)
     fname=os.path.join(src_path,fname)
-    if os.path.isfile(fname):
-        with open(fname,'rb') as fid:
-             data=fid.read()
-        encode_fname = sha1(str(data).encode('utf-8')).hexdigest()
-        dst_fname = os.path.join(dst_path, encode_fname + '-' + os.path.basename(fname))
-        shutil.copyfile(src=fname, dst=dst_fname)
-        if compress:
-           compress_file(dst_fname, compression=compression)
-           dst_fname = dst_fname.replace(dst_path,'')
-           if abs_path:
-              return os.path.join(dst_path,dst_fname[1:] + '.' + compression)
-           return dst_fname[1:] + '.' + compression
-        else:
-           dst_fname = dst_fname.replace(dst_path,'')
-           if abs_path:
-              return os.path.join(dst_path,dst_fname[1:] )
-           return dst_fname[1:]
-           
+    if rename:
+       if os.path.isfile(fname):
+           with open(fname,'rb') as fid:
+                data=fid.read()
+           encode_fname = sha1(str(data).encode('utf-8')).hexdigest()
+           dst_fname = os.path.join(dst_path, encode_fname + '-' + os.path.basename(fname))
+           try:
+              shutil.copyfile(src=fname, dst=dst_fname)
+           except SameFileError:
+              pass
+           if compress:
+              compress_file(dst_fname, compression=compression)
+              dst_fname = dst_fname.replace(dst_path,'')
+
+              if path_type == 'base':
+                  return dst_fname[1:] + '.' + compression
+              elif path_type == 'relative':
+                  return os.path.join(dst_path,dst_fname[1:] + '.' + compression)
+              else:
+                  return os.path.abspath(os.path.join(dst_path,dst_fname[1:] + '.' + compression))
+           else:
+              if path_type == 'base':
+                  return dst_fname[1:] 
+              elif path_type == 'relative':
+                  return os.path.join(dst_path,dst_fname[1:] )
+              else:
+                  return os.path.abspath(os.path.join(dst_path,dst_fname[1:] ))
+              
+       else:
+           raise RuntimeError('%s is not a file'%(fname))
     else:
-        return None
+       try:
+          shutil.copyfile(src=fname, dst=dst_fname)
+       except SameFileError:
+          pass
+
 
 def test_path(f='.'):
     #fpath=os.path.abspath(__file__) 

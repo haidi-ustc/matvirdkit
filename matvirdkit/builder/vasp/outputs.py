@@ -88,7 +88,7 @@ class VaspOutputs(object):
                #              "data": f.read()}
             if save_raw:
                #print('===',foutput)
-               cfname = os.path.join(dst_path,transfer_file(foutput, self.work_path, dst_path))
+               cfname = transfer_file(foutput, self.work_path, dst_path)
                #print(cfname)
             else:
                cfname = ''
@@ -102,8 +102,7 @@ class VaspOutputs(object):
                json_file_name = ''
             print(foutput, ' : jsanitize-->', json_file_name)
             jfd=JFData(file_fmt='.gz',file_id=None, file_name=cfname,
-
-                   json_id=None, json_file_name=json_file_name,json_data={})
+                   json_id=None, json_file_name=os.path.basename(json_file_name),json_data={})
             pprint(jfd.dict())
             doutput[foutput]=jfd
         _doutput=copy.deepcopy(doutput)      
