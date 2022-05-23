@@ -107,27 +107,32 @@ class StiffnessStability(BaseModel):
                 }
           return cls(**{k: v for k, v in data.items() if k in fields}, **kwargs)
 
+class Stability(BaseModel):
+    """
+    An magntic  property block
+    """
+    stiff_stability: StiffnessStability  = Field(StiffnessStability(), description='stiff stability information')
+    thermo_stability: ThermoDynamicStability  = Field(ThermoDynamicStability(), description='thermo stability information')
+    phon_stability: PhononStability  = Field(PhononStability(), description='phon stability information')
+
 class StabilityDoc(PropertyDoc):
     """
     An magntic  property block
     """
 
     property_name: ClassVar[str] = "stability"
-    stiff_stability: List[StiffnessStability]  = Field([], description='stiff stability information')
-    thermo_stability: List[ThermoDynamicStability]  = Field([], description='thermo stability information')
-    phon_stability: List[PhononStability]  = Field([], description='phon stability information')
+    stability: List[Stability] = Field([], description='stiff stability information')
 
 if __name__=='__main__': 
    ustr1=str(uuid.uuid4())
    ustr2=str(uuid.uuid4())
    pd=StabilityDoc(created_at=datetime.now(),
-      stiff_stability=[ 
-              StiffnessStability(value='low',description='scan-static',link=ustr1) ,
-              StiffnessStability.from_dict(min_eig_tensor=0.1)
-                         ],
-      thermo_stability= [
-              ThermoDynamicStability.from_dict (e_f=-0.1, e_abh=0.0,description='pbe-static',link=ustr2) ,
-              ThermoDynamicStability.from_dict (e_f=0.2, e_abh=0.1,description='lda-static') ,
+      stability = [ 
+           Stability ( 
+           #stiff_stability =  StiffnessStability(value='low',description='scan-static',link=ustr1) ,
+           stiff_stability =   StiffnessStability.from_dict(min_eig_tensor=0.1),
+           thermo_stability=  ThermoDynamicStability.from_dict (e_f=-0.1, e_abh=0.0,description='pbe-static',link=ustr2)
+               ) 
                          ] ,
       origins=[
               PropertyOrigin(name='static',task_id='task-112',link=ustr1),
@@ -139,4 +144,4 @@ if __name__=='__main__':
    print(pd.json())
    print(pd.json())
    from monty.serialization import loadfn,dumpfn
-   dumpfn(jsanitize(pd),'t.json',indent=4)
+   dumpfn(jsanitize(pd),'stab.json',indent=4)
