@@ -17,9 +17,9 @@ except ImportError:
          readme = f.read()
 
 default_prefix='matvirdkit'
-#today = datetime.date.today().strftime("%b-%d-%Y")
-#with open(path.join(default_prefix, '_date.py'), 'w') as fp :
-#    fp.write('date = \'%s\'' % today)
+today = datetime.date.today().strftime("%b-%d-%Y")
+with open(path.join(default_prefix, '_date.py'), 'w') as fp :
+    fp.write('date = \'%s\'' % today)
 install_requires=["pymatgen==2022.4.26",
                    "pydantic==1.9.0",
                    "pymongo==4.1.1",
@@ -42,7 +42,7 @@ setup(
                 "This software is based on Pymatgen, ASe and  some open-source Python libraries.",
     long_description=readme,
     long_description_content_type="text/markdown",
-    keywords=["database", "api", "drone" ],
+    keywords=["database", "api", "mongoDB" , "drone" ],
     data_files=[ ( "matvirdkit/model/vasp/calc_types/", ["matvirdkit/model/vasp/calc_types/run_types.yaml",])],
     classifiers=[
         "Programming Language :: Python :: 3.9",
@@ -53,6 +53,6 @@ setup(
     ],
     entry_points={
           'console_scripts': []
-#              'mpt = maptool.mpt:main'],
+#              'mvdkit = matvirdkit.builder.cli:main'],
  }
 )
