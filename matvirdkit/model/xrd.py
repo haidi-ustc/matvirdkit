@@ -25,20 +25,15 @@ class Edge(ValueEnum):
     K_Beta1 = "Kb1"
     K_Beta2 = "Kb2"
 
-class XRDDoc(PropertyDoc):
-    """
-    Document describing a XRD Diffraction Pattern
-    """
-
-    property_name: ClassVar[str] = "spectrum"
-
+class XRD(BaseModel):
+    description : Optional[str] = 'XRD information'
+    link: str = Field(None)
     spectrum_id: str = Field(
         ...,
         title="Spectrum Document ID",
         description="The unique ID for this spectrum document",
     )
 
-    link: str = Field(None)
     spectrum: Any #DiffractionPattern
     min_two_theta: float
     max_two_theta: float
@@ -47,7 +42,6 @@ class XRDDoc(PropertyDoc):
         None, description="Target element for the diffraction source"
     )
     edge: Edge = Field(None, description="Atomic edge for the diffraction source")
-
     @root_validator(pre=True)
     def get_target_and_edge(cls, values: Dict):
         print("Validations")
@@ -71,7 +65,7 @@ class XRDDoc(PropertyDoc):
     def from_structure(  
         cls,
         created_at: datetime,
-        material_id: str,
+        #material_id: str,
         spectrum_id: str,
         structure: Structure,
         wavelength: float,
@@ -93,7 +87,7 @@ class XRDDoc(PropertyDoc):
 
         return cls(
             created_at=created_at,
-            material_id=material_id,
+            #material_id=material_id,
             spectrum_id=spectrum_id,
             spectrum=_pattern,
             wavelength=wavelength,
@@ -122,7 +116,7 @@ class XRDDoc(PropertyDoc):
         spectrum_id = f"{material_id}-{target}{edge}"
 
         return cls.from_structure(
-            material_id=material_id,
+            #material_id=material_id,
             spectrum_id=spectrum_id,
             structure=structure,
             wavelength=wavelength,
@@ -132,6 +126,14 @@ class XRDDoc(PropertyDoc):
             max_two_theta=max_two_theta,
             **kwargs,
         )
+     
+class XRDDoc(PropertyDoc):
+    """
+    Document describing a XRD Diffraction Pattern
+    """
+    property_name: ClassVar[str] = "spectrum"
+    xrd: List[XRD] = Field([], description='XRD List')
+
 
 if __name__ == '__main__':
    import os
@@ -139,15 +141,21 @@ if __name__ == '__main__':
    from matvirdkit.model.utils import test_path
    from monty.serialization import loadfn,dumpfn
    st=Structure.from_file(os.path.join(test_path(),'relax/CONTCAR'))
-   xrd=XRDDoc.from_target( 
-        created_at=datetime.now()   ,
-        material_id='bms-1',
-        structure=st,
-        target= 'Cu',
-        edge= "Ka", 
-        min_two_theta=0,
-        max_two_theta=180)
-   print(xrd.json())
+   xrddoc=XRDDoc(
+         created_at=datetime.now(),
+         xrd= [XRD.from_target( 
+                              created_at=datetime.now()   ,
+                              material_id='bms-1',
+                              structure=st,
+                              target= 'Cu',
+                              edge= "Ka", 
+                              min_two_theta=0,
+                              max_two_theta=180)  
+          ],
+       material_id='bms-1',
+      )
+
+   print(xrddoc.json())
    from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import jsanitize,ValueEnum
-   dumpfn(jsanitize(xrd),'t.json',indent=4)
+   dumpfn(jsanitize(xrddoc),'xrd.json',indent=4)
