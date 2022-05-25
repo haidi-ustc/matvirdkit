@@ -11,3 +11,6 @@ test
 */_date.py
 check
 tmp
+repository
+matvirdkit/model/*json
+*swp
