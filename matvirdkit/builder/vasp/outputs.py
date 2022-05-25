@@ -69,6 +69,7 @@ class VaspOutputs(object):
                 data = self.get_contcar(fname,relax=self.relax)
             elif "OSZICAR" in foutput:
                 data = self.get_oszicar(fname)
+                print('OSZICAR: ',data)
             elif "CHGCAR" in foutput:
                 data = self.get_chgcar(fname)
             elif "ELFCAR" in foutput:
@@ -86,7 +87,7 @@ class VaspOutputs(object):
                #              "@class": cls.__class__.__name__,
                #              "@version" = __version__
                #              "data": f.read()}
-            if save_raw:
+            if save_raw and data:
                #print('===',foutput)
                cfname = transfer_file(foutput, self.work_path, dst_path)
                #print(cfname)
