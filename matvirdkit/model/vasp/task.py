@@ -160,7 +160,7 @@ class TaskDocument(StructureMetadata):
 
     label: str = Field('', description='Label of a task')
     description: str = Field('', description='Description of a task')
-    dir_name: str = Field(None, description="The directory for this VASP task")
+    dir_name: str = Field('', description="The directory for this VASP task")
     run_stats: Dict[str, RunStatistics] = Field(
         {},
         description="Summary of runtime statisitics for each calcualtion in this task",
@@ -191,6 +191,7 @@ class TaskDocument(StructureMetadata):
         {}, description="raw data of the original VASP outputs"
     )
     task_id: str = Field(None, description="the Task ID For this document")
+    short_id: str =  Field(None, description="the short Task ID For this document")
     tags: List[str] = Field([], description="Metadata tags for this task document")
 
     calcs_reversed: List[Dict] = Field(
@@ -258,13 +259,16 @@ class TaskDocument(StructureMetadata):
         task_dir: str,
         dst_dir: str,
         f_inputs : List[str]= [],
-        f_outputs :  List[str] = []
+        f_outputs :  List[str] = [],
+        **kargs
     ) -> "TaskDocument":
         if task_tag(task_dir,status='check'):
            tag=loadfn(os.path.join(task_dir,'tag.json'))
            f_task=os.path.join(tag['path'],'task.json')
            if os.path.isfile(f_task):
-              return cls(**loadfn(os.path.join(tag['path'],'task.json'),cls=None))
+              _dtask=loadfn(os.path.join(tag['path'],'task.json'),cls=None)
+              _dtask.update(kargs)
+              return cls(**_dtask)
            else:
               pass
 
@@ -278,7 +282,7 @@ class TaskDocument(StructureMetadata):
         try:
            out=Outcar(os.path.join(task_dir,'OUTCAR'))
         except:
-           raise RuntimeError('Bad OUTCAR')
+           out={}
         try:
            if os.path.isfile(os.path.join(task_dir,'CONTCAR') ):
               contcar=Poscar.from_file(os.path.join(task_dir,'CONTCAR'))
@@ -312,7 +316,11 @@ class TaskDocument(StructureMetadata):
           "stress":vr.as_dict()['output']['ionic_steps'][-1]['stress'],
          }
         orig_inputs=InputData.from_directory(task_dir)
-        run_statistics=RunStatistics.from_vaspout_dict(out.as_dict()['run_stats'])
+        try:
+            run_statistics=RunStatistics.from_vaspout_dict(out.as_dict()['run_stats'])
+        except:
+            run_statistics=RunStatistics()
+           
         structure_meta=StructureMetadata.from_structure(vr.initial_structure)
         orig_outputs=OutputData.from_directory(task_dir=task_dir, dst_dir=dst_dir)
         #print('='*20)
@@ -331,6 +339,7 @@ class TaskDocument(StructureMetadata):
          "last_updated": datetime.now()
          }
         d.update(structure_meta)
+        d.update(kargs)
     
         return cls(**d)
            

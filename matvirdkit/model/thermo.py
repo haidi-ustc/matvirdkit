@@ -11,6 +11,7 @@ from pymatgen.entries.computed_entries import ComputedEntry, ComputedStructureEn
 
 from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
 from matvirdkit.model.structure import StructureMetadata
+from matvirdkit.model.common import MatvirdBase
 
 
 class DecompositionProduct(BaseModel):
@@ -30,8 +31,7 @@ class DecompositionProduct(BaseModel):
         description="The amount of the decomposed material by formula units this this material decomposes to",
     )
 
-
-class Thermo(BaseModel):
+class Thermo(MatvirdBase):
     """
     A thermo entry document
     """
@@ -87,7 +87,6 @@ class Thermo(BaseModel):
         description="List of all entries that are valid for this material."
         " The keys for this dictionary are names of various calculation types",
     )
-    link: str = Field(None, description='Linker to external tasks')
 
     #@classmethod
     #def from_entries(cls, entries: List[Union[ComputedEntry, ComputedStructureEntry]]):
@@ -157,12 +156,12 @@ if __name__=='__main__':
    ustr=str(uuid4())
    pd=ThermoDoc(created_at=datetime.now(),
       thermos=[
-                Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3,description='pbe-static',link=ustr),
+                Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3,description='pbe-static',link= [ustr]),
                 Thermo(energy_above_hull=0.1, uncorrected_energy_per_atom=-2.4,description='pbe-static-d2')
                ],
-      origins=[PropertyOrigin(name='static',task_id='task-112',link=ustr)],
+      origins=[PropertyOrigin(name='static',task_id='task-112',link=[ustr])],
       material_id='rsb-1',
-      tas = ['high temperature phase']
+      tags = ['high temperature phase']
       )
    print(pd.dict())
-   dumpfn(jsanitize(pd),'t.json',indent=4)
+   dumpfn(jsanitize(pd),'thermo.json',indent=4)

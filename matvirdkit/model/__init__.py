@@ -1,4 +1,4 @@
-from .common import (JData, FData, Data, Meta, Database, ReferenceDB,
+from .common import ( Meta, Database, ReferenceDB,
                      Author, DOI, Reference,History)
 from .electronic import Workfunction, Bandgap, EMC, Mobility, ElectronicStructureDoc
 from .magnetism import Order, Magnetism, MagnetismDoc
@@ -13,4 +13,4 @@ from .symmetry import CrystalSystem, SymmetryData
 from .utils import ValueEnum, DocEnum, YesOrNo
 from .xrd import Edge, XRDDoc
 from .bms import BMS,BMSDoc
-from .mechanics import Mechanics, Mechanics3D, Mechanics2D, Mechanics3DDoc, Mechanics2DDoc
+from .mechanics import  Mechanics3D, Mechanics2D, Mechanics3DDoc, Mechanics2DDoc

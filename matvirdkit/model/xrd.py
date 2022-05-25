@@ -16,6 +16,7 @@ from pymatgen.core.periodic_table import Element
 from matvirdkit.model.spectrum import SpectrumDoc
 from matvirdkit.model.utils import ValueEnum, jsanitize
 from matvirdkit.model.properties import PropertyDoc
+from matvirdkit.model.common import MatvirdBase
 
 class Edge(ValueEnum):
     K_Alpha = "Ka"
@@ -25,9 +26,7 @@ class Edge(ValueEnum):
     K_Beta1 = "Kb1"
     K_Beta2 = "Kb2"
 
-class XRD(BaseModel):
-    description : Optional[str] = 'XRD information'
-    link: str = Field(None)
+class XRD(MatvirdBase):
     spectrum_id: str = Field(
         ...,
         title="Spectrum Document ID",
@@ -150,7 +149,7 @@ if __name__ == '__main__':
                               target= 'Cu',
                               edge= "Ka", 
                               min_two_theta=0,
-                              max_two_theta=180)  
+                              max_two_theta=180,link=['a1b2c3'])  
           ],
        material_id='bms-1',
       )

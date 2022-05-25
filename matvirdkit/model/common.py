@@ -8,7 +8,13 @@ from typing import ClassVar, Dict, List, Optional, Union, Tuple, Any
 from pydantic import BaseModel, EmailStr, Field, validator,constr
 from matvirdkit.model.utils import ValueEnum
 
-class JFData(BaseModel):
+class MatvirdBase(BaseModel):
+      description : Optional[str] = ''
+      label: Optional[str] = ''
+      link: List[str] = Field([])
+      meta: Dict[str,Any]  = Field({}, description='meta information')
+
+class JFData(MatvirdBase):
      """
      Json File Data --> JFData. 
      This class is used to store several types of data
@@ -55,20 +61,16 @@ class JFData(BaseModel):
                json_file_name ='', 
                json_data = {} ) 
      """
-     description : Optional[str]= Field('',description='Data description')
      file_fmt: Optional['str'] = Field('',description='file format of, which will be linked with f_id')
      file_id: Optional['str'] = Field('',description='If the file is saved in the mongoDB by file then the corresponding ID will be recorded')
      file_name: Optional['str'] = Field('',description='The file name for figure or raw data that will be saved in Mongo File')
      json_id: Optional['str'] = Field('',description='If the data is saved in the mongoDB by json then the corresponding ID will be recorded')
      json_file_name: Optional['str'] = Field('',description='The file name for json data that will be saved in Mongo directly by ref ID')
      json_data: Optional[Dict] = Field({},description='json data that will be saved in current data structure')
-     meta : Any = Field({})
 
 class DataFigure(BaseModel):
-    description : Optional[str] = Field('', description='data information')
     data: List[JFData] = Field(None,description='data')
     figure: JFData = Field(...,description='figure')
-    link: str = Field(None)
 
 class Meta(BaseModel):
       description : Optional[str] = 'Meta information'

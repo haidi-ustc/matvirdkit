@@ -6,37 +6,42 @@ from pydantic import BaseModel, Field
 from monty.serialization import loadfn,dumpfn
 from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
 from matvirdkit.model.utils import VoigtVector,Matrix3D,Vector3D,YesOrNo
-from matvirdkit.model.utils import ElasticTensor
-from matvirdkit.model.common import DataFigure,JFData
+from matvirdkit.model.utils import ElasticTensor, ValueEnum
+from matvirdkit.model.common import DataFigure,JFData,MatvirdBase
 
-M2 = TypeVar("M2", bound="Mechanics2D")
-M3 = TypeVar("M3", bound="Mechanics3D")
+M2S = TypeVar("M2", bound="Mechanics2DSummary")
+M3S = TypeVar("M3", bound="Mechanics3DSummary")
 
-class Mechanics(BaseModel):
-    description : Optional[str] = 'mechanical information'
-    link: str = Field(None)     
-    s_tensor : ElasticTensor = Field(..., description='stiffness tensor ') 
-    c_tensor : ElasticTensor = Field(..., description='compliance tensor ') 
+class ApproachAndProperty(ValueEnum):
+      elc_energy="elc_energy"
+      elc_stress="elc_stress"
+      ssc_stress="ssc_stress"
 
-class Mechanics3D(Mechanics):
-      stability:  YesOrNo = Field(...,description='stable or not')
+class Direction2D(ValueEnum):
+      xx='Def_xx'
+      xy='Def_xy'
+      yy='Def_yy'
+      bi='Def_bi'
 
-class Mechanics2D(Mechanics):
-      Lm:   float = Field(...,description='2D layer modulus (N/m)')
-      Y10:  float = Field(...,description='2D Young\'s modulus Y[10] (N/m)')
-      Y01:  float = Field(...,description='2D Young\'s modulus Y[01] (N/m)')
-      Gm:   float = Field(...,description='2D Shear modulus G (N/m)')
-      V10:  float = Field(...,description='2D Poisson ratio v[10]')
-      V01:  float = Field(...,description='2D Poisson ratio v[01]')
-      stability:  YesOrNo = Field(...,description='stable or not')
+class MechanicsBase(MatvirdBase):
+    s_tensor : ElasticTensor = Field(None, description='stiffness tensor ') 
+    c_tensor : ElasticTensor = Field(None, description='compliance tensor ') 
+
+class Mechanics2DSummary(MechanicsBase):
+      Lm:   float = Field(None,description='2D layer modulus (N/m)')
+      Y10:  float = Field(None,description='2D Young\'s modulus Y[10] (N/m)')
+      Y01:  float = Field(None,description='2D Young\'s modulus Y[01] (N/m)')
+      Gm:   float = Field(None,description='2D Shear modulus G (N/m)')
+      V10:  float = Field(None,description='2D Poisson ratio v[10]')
+      V01:  float = Field(None,description='2D Poisson ratio v[01]')
+      stability:  YesOrNo = Field(None,description='stable or not')
       @classmethod
       def from_file(
-          cls: Type[M2],
+          cls: Type[M2S],
 	  fname: str='Result.json',
           **kwargs
-          ) -> M2:
+          ) -> M2S:
           fields =  [
-                "link",
                 "s_tensor",
                 "c_tensor",
                 "Lm",
@@ -50,7 +55,7 @@ class Mechanics2D(Mechanics):
           if not os.path.isfile(fname):
              raise RuntimeError('File : %s not exits !'%(fname))
           else:
-             d=loadfn(fname)
+             d=loadfn(fname,cls=None)
           data={
                 "s_tensor" : d['Stiffness_tensor'],
                 "c_tensor": d['Compliance_tensor'],
@@ -65,45 +70,60 @@ class Mechanics2D(Mechanics):
           #dumpfn(cls.schema(),'schema-2d.json')
           return cls(**{k: v for k, v in data.items() if k in fields}, **kwargs)
 
+
+class Mechanics3D(BaseModel):
+      description : Optional[str] = ''
+
+class Mechanics2D(BaseModel):
+      summary:  Dict[ApproachAndProperty,Mechanics2DSummary] = Field(None, description='Summary of 2D mechanical properties')
+      polar_EV: Dict[ApproachAndProperty,DataFigure] = Field(None, description='Angle dependent Young\'s modulus and Poisson\'s ratio information')
+      stress_strain: Dict[ApproachAndProperty,Dict[Direction2D,DataFigure]] = Field(None, description='Stress-strain Curve for different direction')
+      meta:  Dict[ApproachAndProperty,Any] = Field(None, description='meta information for mechanical properties calculation')
+
 class Mechanics2DDoc(PropertyDoc):
     """
     An Mechanics  property block
     """
     property_name: ClassVar[str] = "mechanics2d"
-    mechanics2d: List[Mechanics3D] = Field(None, description='2D Mechanics information')
-    polar_EV: List[DataFigure] = Field(None, description='Angle dependent Young\'s modulus and Poisson\'s ratio information')
-    meta:  Dict[str,Any] = Field(None, description='meta information for mechanical properties calculation')
+    mechanics2d: List[Mechanics2D] = Field([], description='2D Mechanics information')
 
 class Mechanics3DDoc(PropertyDoc):
     """
     An Mechanics  property block
     """
     property_name: ClassVar[str] = "mechanics3d"
-    mechanics2d: List[Mechanics2D] = Field(None, description='2D Mechanics information')
-    meta:  Dict[str,Any] = Field(None, description='meta information for mechanical properties calculation')
+    mechanics3d: List[Mechanics3D] = Field([], description='3D Mechanics information')
 
 if __name__=='__main__': 
    ustr=str(uuid.uuid4())
+   import numpy as np
+   from matvirdkit.model.utils import jsanitize,ValueEnum
+   from matvirdkit.model.utils import test_path
+   task_dir=os.path.join(test_path(),'alpha-P-R')
+   print(task_dir)
+   
    data=JFData(description='EV data',
         json_file_name='./dataset.mech2d/m2d-1/EV.json',json_id=None,meta={})
+   meta=JFData(description='meta data',
+        json_file_name='./dataset.mech2d/m2d-1/meta.json',json_id=None,meta={})
    fig=JFData(description='EV figure',
         file_fmt='png', file_name='./dataset.mech2d/m2d-1/EV.png',file_id=None)
+   summary= Mechanics2DSummary.from_file(fname=os.path.join(task_dir,'Result.json'),link=['2312abc'])
+   _Mechanics2D = Mechanics2D(**{ 
+         'summary':  {'elc_energy':summary},
+         'polar_EV': {"elc_energy": DataFigure(data=[data],figure=fig)},
+         'meta': {"elc_energy": meta},
+        })
    pd=Mechanics2DDoc(created_at=datetime.now(),
-      mechanics2d=[
-               Mechanics2D.from_file(fname='tests/Result.json',link=ustr)
-                  ],
-      polar_EV = [ 
-               DataFigure(data=data,figure=fig)
-                ],
+      mechanics2d= [_Mechanics2D],
       origins=[
-            PropertyOrigin(name='static',task_id='task-110',link=ustr),
-            PropertyOrigin(name='static',task_id='task-111',link=ustr),
-            PropertyOrigin(name='static',task_id='task-112',link=ustr)
+            PropertyOrigin(name='static',task_id='task-110',link=[ustr]),
+            PropertyOrigin(name='static',task_id='task-111',link=[ustr]),
+            PropertyOrigin(name='static',task_id='task-112',link=[ustr])
            ],
       material_id='m2d-1',
       tags = ['experimental phase','NPR']
+ 
       )
-   print(pd.json())
-   from monty.serialization import loadfn,dumpfn
-   from matvirdkit.model.utils import jsanitize,ValueEnum
-   dumpfn(jsanitize(pd),'t.json',indent=4)
+   dumpfn(jsanitize(pd),'mech.json',indent=4)
+   print(jsanitize(pd.dict()))

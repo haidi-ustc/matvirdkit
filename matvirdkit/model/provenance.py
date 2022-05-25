@@ -32,4 +32,4 @@ if __name__=='__main__':
    print(pd.json())
    from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import jsanitize,ValueEnum
-   dumpfn(jsanitize(pd),'t.json',indent=4)
+   dumpfn(jsanitize(pd),'provenance.json',indent=4)

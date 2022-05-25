@@ -302,4 +302,4 @@ if __name__=='__main__':
   print('--------')
   print(meta.dict())
   #print(meta.json())
-  dumpfn(jsanitize(meta),'t.json',indent=4)
+  dumpfn(jsanitize(meta),'structure.json',indent=4)
