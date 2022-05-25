@@ -24,7 +24,8 @@ install_requires=["pymatgen==2022.4.26",
                    "pydantic==1.9.0",
                    "pymongo==4.1.1",
                    "Flask==2.1.2",
-                   "fastapi==0.75.2"],
+                   "fastapi==0.75.2",
+                   "python-decouple==3.6"],
 
 setup(
     name="matvirdkit",

@@ -2,6 +2,7 @@
 # coding: utf-8
 import os
 import logging
+from decouple import AutoConfig
 from logging.handlers import RotatingFileHandler
 try:
    from ._version import version as __version__
@@ -32,3 +33,34 @@ ch.setFormatter(formatter)
 log.addHandler(fsc)
 log.addHandler(ch)
 
+
+HOME_DIR   = os.path.expanduser('~')
+BASE_DIR   = os.path.realpath(__file__) 
+CONFIG_DIR = os.path.join(HOME_DIR)
+config     = AutoConfig(CONFIG_DIR)
+ 
+DEBUG      = config('DEBUG', default=False, cast=bool)
+REPO_DIR   = config('REPOSITORY',default=os.path.join(HOME_DIR,'.repository'),cast=str) 
+DATASETS_DIR = os.path.join(REPO_DIR,'datasets')
+META_DIR = os.path.join(REPO_DIR,'meta')
+TASKS_DIR = os.path.join(REPO_DIR,'tasks')
+for _dir in [REPO_DIR,DATASETS_DIR,META_DIR,TASKS_DIR]:
+    if os.path.isdir(_dir):
+       pass
+    else:
+       os.mkdir(_dir)
+
+API_KEY    = config('API_KEY',default='',cast=str)
+MONGODB_URI= config('MONGO_DATABASE_URI',default='',cast=str)  
+
+log.info('Mode: %s'%DEBUG)
+log.info('Repository directory: %s'%REPO_DIR)
+log.info('API key: %s'%API_KEY)
+log.info('MongoDB :%s'%MONGODB_URI)
+ 
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+ 
