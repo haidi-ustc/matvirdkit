@@ -3,17 +3,20 @@ import datetime
 from hashlib import sha1
 from abc import ABCMeta, abstractmethod
 from monty.json import MSONable
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from matvirdkit.model.utils import jsanitize
 from typing import Dict, List, Tuple, Optional, Union, Iterator, Set, Sequence, Iterable
-from functools import wraps
-
-#from matvirdkit.model.
+from mvdkit.builder.readstructure import structure_from_file
+from matvirdkit.model.electronicstructure import EMC,Bandgap,Mobility,Workfunction
+from matvirdkit.model.properties import PropertyOrigin
 
 __version__ = "0.1.0"
 __author__ = "Matvird"
 
-class Drone(metaclass=ABCMeta):
-
+class Builder(metaclass=ABCMeta):
+    supported_props=['thermo','electronicstructure','mechanics',
+                     'magnetism','xrd','raman','polar','sources',
+                     'customer','provenance','meta'
+                     ]
     def __init__(self, material_id : str, dataset :str ='dataset', dimension : int= 3):
         self.material_id = material_id
         self.rootpath = os.getcwd()
@@ -26,38 +29,46 @@ class Drone(metaclass=ABCMeta):
         self.dimension = dimension
 
         self._structure = None
+        #self._structure_mp = None
 
-        self._thermo = None
+        self._thermo       = {}  #thermo
+        self._electronicstructure  = {}  #
+        self._mechanics    = {}
+        self._stability    = {}
+        self._magnetism    = {}
+        self._xrd          = {}
+        self._raman        = {}
+        self._polar        = {}
+        self._sources      = {}
+        self._customer     = {}
+        self._provenance   = {}
+        self._meta         = {}
 
-        self._magnetism= None
+        self._origins      = {}
 
-        self._stability = None
+        self._properties   = {}
 
-        self._sources = []
+        self._emcs =  []
+        self._bandgaps =  []
+        self._mobilities =  []
+        self._workfunctions =  []
 
-        self._mechanics = {}
-
-        self._customer = {}
-
-        self._band_gaps= {}
-        self._electronics= {}
-
-        self._meta= None
-
-        self._properties = {}
-
-        self._tasks = {}
-        self._doses=  []
-        self._bands=  []
+        self._ThermoDoc   = {}
+        self._ElectronicStructureDoc = {}
+        self._XRDDoc = {}
+        self._RamanDoc = {}
+        #self._tasks = {}
+        #self._doses=  []
+        #self._bands=  []
 
     def get_doc(self) -> Dict:
         return { 
                  "@module": self.__class__.__module__,
                  "@class": self.__class__.__name__,
-                 "ID":self.material_id,
-                 "Properties": self.get_properties(),
-                 "Tasks": self.get_tasks(),
-                 "generatedBy": __author__,
+                 "material_id":self.material_id,
+                 'structure': self.get_StructureDoc()
+                 "properties": self.get_properties(),
+                 "generated": __author__,
                  "version": __version__
                }
 
@@ -90,141 +101,178 @@ class Drone(metaclass=ABCMeta):
              raise RuntimeError('Only support string and dict')
 
 
-    def set_Eabh_and_Ef_via_MPDB(self,save_pd=False):
-        Eabh=None
-        Ef=None
-        try:
-           Eabh,Ef=calc_pd(self._ce,self._chemsys,save_pd=save_pd)
-        except:
-           pass
-        self._Eabh = Eabh 
-        self._Ef = Ef 
-
-    def set_structure(self, fname='POSCAR'):
+    def set_structure(self, fname='POSCAR') -> None:
         self._structure = structure_from_file(fname)
+        #StructureMatvird.from_structure(self._structure)
 
-    def set_computed_entry(self,energy,correction=0):
-        self._ce=ComputedEntry(self._structure.composition, energy, correction)
+    def get_structure(self,**kargs) -> Structure:
+        return self._structure
 
-    def get_structure(self,**kargs) -> Dict:
+    def get_StructureDoc(self,**kargs) -> Dict:
         return StructureMatvird.from_structure(
                            dimension=self.dimension,
                            structure=self._structure
                            **kargs)
-          
-    def get_input(self, src_path, code='vasp', save_raw  = False):
-        if code.lower() =='vasp':
-           j_id= VaspInputs(src_path).parse_input(dst_path = self.workpath, save_raw = save_raw)
-        elif code.lower() == 'siesta':
-           pass
-        return j_id
 
-    def get_output(self, src_path,  code='vasp', save_raw = True):
-        if code.lower() =='vasp':
-           j_id= VaspOutputs(src_path).parse_output(dst_path = self.workpath, save_raw = save_raw)
-        elif code.lower() == 'siesta':
-           pass
-        return j_id
+    def set_thermos(self,formation_energy_per_atom=None,
+                         energy_above_hull=None,
+                         energy_per_atom=None,
+                         **kargs) -> None:
+        self._thermos.append( Thermo(formation_energy_per_atom=formation_energy_per_atom,
+                                     energy_above_hull=energy_above_hull,
+                                     energy_per_atom=energy_per_atom,**kargs))
+
+    def get_thermos(self) -> Dict:
+         return self._thermos
+
+    def set_origins(self,key,task_id,name='',link=[],append=False) -> None:
+        if  key in self._origins.keys():
+             self._origins[key].append(PropertyOrigin(name=name,task_id=task_id,link=link))
+        else:
+             self._origins[key]=[PropertyOrigin(name=name,task_id=task_id,link=link)]
+    def get_origins(self,key=None) -> Union[Dict,List]:
+        if key:
+           if key in self._origins.keys():
+              return self._origins[key]
+           else:
+              return []
+        else:
+           return self._origins
     
-    def set_task(self,path,label,describ='Ups!!!',code='vasp',save_raw_input=False,save_raw_output=True):
-        j_id1=self.get_input(src_path=path,code=code,save_raw = save_raw_input)
-        j_id2=self.get_output(src_path=path,code=code, save_raw = save_raw_output)
+    def set_ThermoDoc(self, created_at, **kargs) -> None:
+        created_at = created_at if created_at else datetime.now()  
+        self._ThermoDoc=ThermoDoc(created_at = created_at ,
+                         thermos = self.get_thermos(),
+                         origins = self.get_origins('thermo'),
+                         material_id = self._material_id,
+                         **kargs)
 
-        @LabeledData(describ)
-        def _set_task(j_id1,j_id2):
-            d={}
-            d['Input']={'j_id':j_id1}
-            d['Output']={'j_id':j_id2}
-            d['task_id']=sha1(str(j_id1+j_id2).encode('utf-8')).hexdigest()
-         
-            return d
+    def get_ThermoDoc(self) -> ThermoDoc:
+        return self._ThermoDoc
 
-        self._tasks [label]= _set_task(j_id1,j_id2)       
+    def set_emcs(self,value,k_loc,b_loc,**kargs) -> None:
+        self._emcs.append( EMC(k_loc=k_loc,b_loc=b_loc,value=value,**kargs))
 
-    def set_band_gaps(self,  band_gaps : Dict):
-        # the label can be "PBE,LDA,GW,HSE06 et al."
-           #d={"label":label,"bandgap":gap}
-           self._band_gaps = band_gaps
+    def get_emcs(self) -> Dict:
+        log.info('Number of emcs: %d'%(len(self._emcs)))
+        return self._emcs
+    
+    def set_bandgaps(self,value,direct,**kargs) -> None:
+        self._bandgaps.append(Bandgap(value=value,direct=direct,**kargs))
 
-    @LabeledData('Band gap')
-    def get_band_gaps(self):
-        # the label can be "PBE,LDA,GW,HSE06 et al."
-           #d={"label":label,"bandgap":gap}
-        return self._band_gaps
+    def get_bandgaps(self) -> Dict:
+        log.info('Number of bandgaps: %d'%(len(self._bandgaps)))
+        return self._bandgaps
 
-    def set_magnetic(self,magnetic_moment = None, magnetic_order = None, exchange_energy = None):
-        # magnetic_order : NM, FM, AFM, Fim
-        self._magnetic_moment = magnetic_moment
-        self._magnetic_order = magnetic_order
-        self._exchange_energy = exchange_energy
-
-    @LabeledData('Magnetic infomation')
-    def get_magnetic(self):
-        d={"Magnetic_moment": self._magnetic_moment, 
-           "Magnetic_order": self._magnetic_order,
-           "Exchange_energy": self._exchange_energy}
-          
-        return d
-
-    @LabeledData('Energy infomation')
-    def get_energy(self):
-
-        d = {"Decomposition_energy":self._Eabh,
-             "Formation_energy":self._Ef
-             }
-        if self.dimension==2:
-           d.update({"Exfoliation_energy": self._Exfol})
+    def set_bandgaps(self,value,direct,**kargs) -> None:
+        self._bandgaps.append(Bandgap(value=value,direct=direct,**kargs))
         
-        return d 
+    def set_mobilities(self,value,k_loc,b_loc,direction,**kargs) -> None:
+        self._mobilities.append(Mobility(k_loc=k_loc,b_loc=b_loc,value=value,direction=direction,**kargs))
+ 
+    def get_mobilites(self) -> Dict:
+        log.info('Number of mobilites: %d'%(len(self._mobilites)))
+        return self._mobilites
 
-    def get_XRay_diffraction(self):
+    def set_workfunctions(self,value,**kargs) -> None:
+        self._workfunctions.append(Workfunction(value=value,**karg))
+
+    def get_workfunctions(self) -> Dict:
+        log.info('Number of workfunctions: %d'%(len(self._mobilites)))
+        return self._workfunctions
+
+    def set_ElectronicStructureDoc(self,  created_at, **kargs) -> None: 
+        created_at = created_at if created_at else datetime.now()
+        self._ElectronicStructureDoc=ElectronicStructureDoc(created_at = created_at ,
+                         material_id = self._material_id,
+                         origins  = self.get_origins('eletronicstructure'),
+                         bandgaps = self.get_bandgaps(),
+                         emcs     = self.get_emcs(),
+                         mobilities  = self.get_mobilities(),
+                         workfunctions  = self.get_workfunctions(),
+                         doses    = self.get_doses(),
+                         bandstructures = self.get_bandstructures(),
+                         **kargs)
+                           
+    def get_ElectronicStructureDoc(self) -> ElectronicStructureDoc:
+        return self._ElectronicStructureDoc
+
+    def set_magnetism(self,magneatic_moment = None, magnetic_order = None, exchange_energy = None, magnetic_anisotropy= {},**kargs) -> None:
+        self._magnetism.append(Magnetism(magneatic_moment = magneatic_moment ,
+                                         magnetic_order = magnetic_order ,
+                                         exchange_energy = exchange_energy ,
+                                         magnetic_anisotropy = magnetic_anisotropy,
+                                         **kargs))
+
+    def get_magnetism(self) -> Dict:
+        return self._magnetism
+
+    def set_MagnetismDoc(self,  created_at, **kargs) -> None:
+        created_at = created_at if created_at else datetime.now()
+        self._MagnetismDoc=MagnetismDoc(created_at = created_at ,
+                         material_id = self._material_id,
+                         magnetism = self.get_magnetism(),
+                         origins  = self.get_origins('magnetism'),
+                         **kargs)
+
+    def set_xrd(self, target='Cu', edge='Ka', min_two_theta=0, max_two_theta = 180,**kargs) -> None:
+        self._xrd.append(XRD.from_target(
+                         material_id= self.material_id,
+                         structure = self.get_structure(),
+                         target = target,
+                         edge = edge,
+                         min_two_theta = min_two_theta,
+                         max_two_theta = mix_two_theta,
+                         **kargs
+                       ))  
+
+    def get_xrd(self) -> Dict:
+        return self._xrd
+
+    def set_XRDDoc(self,  created_at, **kargs) -> None:
+        created_at = created_at if created_at else datetime.now()
+        self._XRDDoc= XRDDoc(created_at = created_at ,
+                         material_id = self._material_id,
+                         xrd = self.get_xrd(),
+                         origins  = self.get_origins('xrd'),
+                         **kargs)
+
+    def get_XRDDoc(self) -> XRDDoc:
+        return self._XRDDOc   
+    #-----------------Raman spetrum------------
+    def get_raman(self):
         pass
 
+    def set_raman(self):
+        pass
+
+    def get_RamanDoc(self):
+        pass
+
+    def set_RamanDoc(self):
+        pass
+
+    #-----------------Polar prop------------
+    def get_polar(self):
+        return {}
+
+    def set_polar(self):
+        pass
+
+    def get_PolarDoc(self):
+        return {}
+
+    def set_PolarDoc(self):
+        pass
+  
+    #----------------- Sources ------------
+
+
+    #----------------- Others ------------
     def get_XRay_absorptionSpectra(self):
         pass
 
     def get_substrates(self):
-        pass
-
-    def set_elasticity(self,path,label):
-
-        # set the elasticity by using the results from mech2d calculation
-        if self.dimension==2: 
-           keys={"Stiffness_tensor", "Compliance_tensor", "Lm",
-                 "Y10", "Y01", "Gm", "V10", "V01", "Stability"
-                 }
-           d={'ElasticConstant_properties':{},"ElasticConstant_meta":{}}
-           os.chdir(path)
-           with open("m2d.ana.log","wb") as out, open("m2d.ana.err","wb") as err:
-                p=subprocess.Popen(["m2d","post","--plot","-f","png"],stdout=out,stderr=err)
-                p.communicate()
-
-           os.chdir(self.rootpath)
-           if os.path.exists(os.path.join(path,'Result.json')):
-              ret = loadfn(os.path.join(path,'Result.json'))
-              if ret["Stability"]=="Stable":
-                 self._dynamic_stiff = 'HIGH'
-                 EV=np.loadtxt(os.path.join(path,'EV_theta.dat')).tolist()
-                 filename = os.path.join(path,"energy-EV.png")
-                 if os.path.exists(filename):
-                    pass
-                 else:
-                    filename = None
-              else:
-                 filename=None
-                 EV=None
-              for key in keys:
-                  d['ElasticConstant_properties'][key]=ret[key]
-              d['ElasticConstant_properties']["EV"]={"data":EV,"f_id":filename}
-              self.Mechanics=d
-              return d
-           else:
-              print("File %s"%os.path.join(self.workpath,'Result.json')+" no exist." )
-              os._exit(0)
-
-        pass
-
-    def get_stress_strain_curve(self):
         pass
 
     def get_piezoelectricity(self):
@@ -242,7 +290,6 @@ class Drone(metaclass=ABCMeta):
     def get_similar_structures(self):
         pass
 
-
     def set_dos(self,path, label='',  code= 'vasp', auto = False, **kargs):
         d={}
         if code.lower() =='vasp':
@@ -256,14 +303,11 @@ class Drone(metaclass=ABCMeta):
            pass
         self._doses.append({label+'-'+code:d})
 
-    @LabeledData('Density of states')
     def get_dos(self):
         return self._doses   
 
-    @LabeledData('Band structure')
     def get_band(self,path, label='', code = 'vasp'):
         return self._bands   
-
     
     def set_stability(self):
         
@@ -281,7 +325,7 @@ class Drone(metaclass=ABCMeta):
               PropertyOrigin(name='static',task_id='task-113',link=ustr2),
                ],
       material_id='rsb-1',
-      tgas = ['high temperature phase']
+      tags = ['high temperature phase']
       )
         #set up the value manually 
         # E_abh=0.0  high
