@@ -6,9 +6,9 @@ from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
 from matvirdkit.model.utils import Vector3D
 from matvirdkit.model.common import JFData, DataFigure,MatvirdBase
 
-def get_vasp_dos(workpath,**kargs):
+def get_vasp_dos(workpath,**kwargs):
     from matvirdkit.builder.vasp.electronic_structure import ElectronicStructure
-    electronic_structure=ElectronicStructure(workpath,**kargs)
+    electronic_structure=ElectronicStructure(workpath,**kwargs)
     return electronic_structure.get_dos_auto(workpath)
 
 class Workfunction(MatvirdBase):

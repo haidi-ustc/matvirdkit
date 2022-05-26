@@ -75,7 +75,7 @@ class OutputData(BaseModel):
     def from_directory(cls,
                    task_dir:str,
                    dst_dir:str,
-                   fields: Optional[List[str]] = None,**kargs) -> 'OutputData':
+                   fields: Optional[List[str]] = None,**kwargs) -> 'OutputData':
         fields = (
             [
                 "VASPRUN",
@@ -91,7 +91,7 @@ class OutputData(BaseModel):
         #foutputs=[field for field in fields if field != 'VASPRUN']
         #if 'VASPRUN' in fields:
         #   foutputs.append('vasprun.xml')
-        vout = VaspOutputs(task_dir,fields,**kargs)
+        vout = VaspOutputs(task_dir,fields,**kwargs)
         #print('ok') 
         d=vout.parse_output(dst_path = dst_dir, save_raw = True)
         #print(d.keys())
@@ -260,14 +260,14 @@ class TaskDocument(StructureMetadata):
         dst_dir: str,
         f_inputs : List[str]= [],
         f_outputs :  List[str] = [],
-        **kargs
+        **kwargs
     ) -> "TaskDocument":
         if task_tag(task_dir,status='check'):
            tag=loadfn(os.path.join(task_dir,'tag.json'))
            f_task=os.path.join(tag['path'],'task.json')
            if os.path.isfile(f_task):
               _dtask=loadfn(os.path.join(tag['path'],'task.json'),cls=None)
-              _dtask.update(kargs)
+              _dtask.update(kwargs)
               return cls(**_dtask)
            else:
               pass
@@ -339,7 +339,7 @@ class TaskDocument(StructureMetadata):
          "last_updated": datetime.now()
          }
         d.update(structure_meta)
-        d.update(kargs)
+        d.update(kwargs)
     
         return cls(**d)
            

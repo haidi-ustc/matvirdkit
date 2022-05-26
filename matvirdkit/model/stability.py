@@ -18,10 +18,10 @@ S = TypeVar("S", bound="StiffnessStability")
 class ThermoDynamicStability(MatvirdBase):
       value: LMH = Field(None, description='stability from thermodynamic')
       @classmethod
-      def from_dict(
+      def from_value(
           cls: Type[T],
-	  e_f: float,
-	  e_abh: float,
+	  formation_energy_per_atom: float,
+	  energy_above_hull: float,
 	  fields: Optional[List[str]] = None,
           **kwargs
           ) -> T:
@@ -34,9 +34,9 @@ class ThermoDynamicStability(MatvirdBase):
               else fields
           )
 
-          if e_f > 0.2 :
+          if formation_energy_per_atom > 0.2 :
              value=LMH.low           
-          elif   e_f > 0.2+ e_abh and e_f < 0.2:
+          elif   formation_energy_per_atom > 0.2+ energy_above_hull and formation_energy_per_atom < 0.2:
              value=LMH.middle
           else:
              value=LMH.high
@@ -48,7 +48,7 @@ class ThermoDynamicStability(MatvirdBase):
 class PhononStability(MatvirdBase):
       value: LMH = Field(None, description='stability from phonons')
       @classmethod
-      def from_dict(
+      def from_value(
           cls: Type[P],
 	  max_hessian: float,
 	  fields: Optional[List[str]] = None,
@@ -75,7 +75,7 @@ class PhononStability(MatvirdBase):
 class StiffnessStability(MatvirdBase):
       value: LMH = Field(None, description='stability from stiffness')
       @classmethod
-      def from_dict(
+      def from_value(
           cls: Type[S],
 	  min_eig_tensor: float,
 	  fields: Optional[List[str]] = None,
@@ -113,8 +113,8 @@ if __name__=='__main__':
    ustr1=str(uuid.uuid4())
    ustr2=str(uuid.uuid4())
    pd=StabilityDoc(created_at=datetime.now(),
-           stiff_stability =  [  StiffnessStability.from_dict(min_eig_tensor=0.1) ],
-           thermo_stability=  [ ThermoDynamicStability.from_dict (e_f=-0.1, e_abh=0.0,description='pbe-static',link= [ustr2 ]) ],
+           stiff_stability =  [  StiffnessStability.from_value(min_eig_tensor=0.1) ],
+           thermo_stability=  [ ThermoDynamicStability.from_value (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static',link= [ustr2 ]) ],
       origins=[
               PropertyOrigin(name='static',task_id='task-112',link=[ustr1]),
               PropertyOrigin(name='static',task_id='task-113',link=[ustr2]),
