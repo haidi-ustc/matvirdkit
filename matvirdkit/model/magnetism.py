@@ -14,8 +14,9 @@ class Order(ValueEnum):
     AFM : str = 'AFM'
 
 class Magnetism(MatvirdBase):
-    tot_moment: Optional[float]
-    order: Order = Field(None,title='Magnetic order')
+    magneatic_moment: Optional[float] = Field(None, description='total manetic moment of system')
+    magnetic_order: Order = Field(None,title='Magnetic magnetic_order')
+    exchange_energy: Optional[float] = Field(None)
     # unit meV/unit cell
     # ref https://cmrdb.fysik.dtu.dk/c2db/row/Br2Cr2O2-40d95997a4f9
     #{'Ez-Ex': 0.12 , 'Ez-Ey': 0.05}
@@ -34,7 +35,7 @@ if __name__=='__main__':
    ustr=str(uuid.uuid4())
    pd=MagnetismDoc(created_at=datetime.now(),
       magnetisms=[
-                Magnetism(order='FM',tot_moment=1.3,label='pbe-static',link=[ustr]),
+                Magnetism(magnetic_order='FM',magneatic_moment=1.3,label='pbe-static',link=[ustr]),
                ],
       origins=[PropertyOrigin(name='static',task_id='task-112',link=[ustr])],
       material_id='rsb-1',
