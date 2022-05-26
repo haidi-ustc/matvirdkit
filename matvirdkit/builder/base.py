@@ -31,19 +31,19 @@ class Builder(metaclass=ABCMeta):
         self._structure = None
         #self._structure_mp = None
 
-        self._thermo       = {}  #thermo
-        self._electronicstructure  = {}  #
-        self._mechanics    = {}
-        self._stability    = {}
-        self._magnetism    = {}
-        self._xrd          = {}
-        self._raman        = {}
-        self._polar        = {}
-        self._sources      = {}
-        self._customer     = {}
-        self._provenance   = {}
-        self._meta         = {}
+        self._thermo       = []  #thermo
+        self._electronicstructure  = []  #
+        self._mechanics    = []
+        self._stability    = []
+        self._magnetism    = []
+        self._xrd          = []
+        self._raman        = []
+        self._polar        = []
+        self._sources      = []
+        self._provenance   = []
+        self._meta         = []
 
+        self._customer     = {}
         self._origins      = {}
 
         self._properties   = {}
@@ -57,6 +57,9 @@ class Builder(metaclass=ABCMeta):
         self._ElectronicStructureDoc = {}
         self._XRDDoc = {}
         self._RamanDoc = {}
+        self._SourceDoc = {}
+        self._MagnetismDoc={}
+        self._MetaDoc = {}
         #self._tasks = {}
         #self._doses=  []
         #self._bands=  []
@@ -66,7 +69,7 @@ class Builder(metaclass=ABCMeta):
                  "@module": self.__class__.__module__,
                  "@class": self.__class__.__name__,
                  "material_id":self.material_id,
-                 'structure': self.get_StructureDoc()
+                 'structure': self.get_StructureDoc(),
                  "properties": self.get_properties(),
                  "generated": __author__,
                  "version": __version__
@@ -114,17 +117,6 @@ class Builder(metaclass=ABCMeta):
                            structure=self._structure
                            **kargs)
 
-    def set_thermos(self,formation_energy_per_atom=None,
-                         energy_above_hull=None,
-                         energy_per_atom=None,
-                         **kargs) -> None:
-        self._thermos.append( Thermo(formation_energy_per_atom=formation_energy_per_atom,
-                                     energy_above_hull=energy_above_hull,
-                                     energy_per_atom=energy_per_atom,**kargs))
-
-    def get_thermos(self) -> Dict:
-         return self._thermos
-
     def set_origins(self,key,task_id,name='',link=[],append=False) -> None:
         if  key in self._origins.keys():
              self._origins[key].append(PropertyOrigin(name=name,task_id=task_id,link=link))
@@ -138,6 +130,18 @@ class Builder(metaclass=ABCMeta):
               return []
         else:
            return self._origins
+
+    def set_thermos(self,formation_energy_per_atom=None,
+                         energy_above_hull=None,
+                         energy_per_atom=None,
+                         **kargs) -> None:
+        self._thermos.append( Thermo(formation_energy_per_atom=formation_energy_per_atom,
+                                     energy_above_hull=energy_above_hull,
+                                     energy_per_atom=energy_per_atom,**kargs))
+
+    def get_thermos(self) -> Dict:
+         return self._thermos
+
     
     def set_ThermoDoc(self, created_at, **kargs) -> None:
         created_at = created_at if created_at else datetime.now()  
@@ -239,6 +243,43 @@ class Builder(metaclass=ABCMeta):
 
     def get_XRDDoc(self) -> XRDDoc:
         return self._XRDDOc   
+
+    #----------------- Sources ------------
+
+    def set_sources(self, db_name, material_id, material_url, description=''):
+        self._sources.append(Source(
+                                   db_name=db_name,   
+                                   material_id = material_id,   
+                                   material_url = material_url,   
+                                   description = description   
+                                   ))
+    def get_sources(self):
+        return self._sources
+    
+    def set_SourceDoc(self):
+        self._SourceDoc =  SourceDoc(source=self.get_sources())
+
+    def get_SourceDoc(self):
+        return self._SourceDoc
+
+    #----------------- Meta ------------
+
+    def set_meta(self, user, machine, cpuinfo, description=''):
+        self._meta.append(Meta(
+                              user=user,   
+                              machine = machine,   
+                              cpuinfo = cpuinfo,   
+                              description = description   
+                                   ))
+    def get_meta(self):
+        return self._meta
+    
+    def set_MetaDoc(self):
+        self._MetaDoc =  MetaDoc(meta=self.get_meta())
+
+    def get_MetaDoc(self):
+        return self._MetaDoc
+
     #-----------------Raman spetrum------------
     def get_raman(self):
         pass
@@ -265,8 +306,6 @@ class Builder(metaclass=ABCMeta):
     def set_PolarDoc(self):
         pass
   
-    #----------------- Sources ------------
-
 
     #----------------- Others ------------
     def get_XRay_absorptionSpectra(self):
@@ -290,6 +329,7 @@ class Builder(metaclass=ABCMeta):
     def get_similar_structures(self):
         pass
 
+
     def set_dos(self,path, label='',  code= 'vasp', auto = False, **kargs):
         d={}
         if code.lower() =='vasp':
@@ -306,7 +346,7 @@ class Builder(metaclass=ABCMeta):
     def get_dos(self):
         return self._doses   
 
-    def get_band(self,path, label='', code = 'vasp'):
+    def get_band(self):
         return self._bands   
     
     def set_stability(self):
@@ -338,140 +378,30 @@ class Builder(metaclass=ABCMeta):
         else:
            self._thermodynamic = "LOW"
 
-
-    @LabeledData('Stability infomation')
-    def get_stability(self):
-        d = {}
-        d["Thermodynamic"] = self._thermodynamic 
-        d["Dynamical_phonons"] = self._dynamic_phon 
-        d["Dynamical_stiffness"] = self._dynamic_stiff 
-        return d
-    
-    def insert_customer_data(self,label,data):
+    def insert_customer_data(self,label : str,data : Dict) -> None:
         #d={"label":label,"data":data}
         self._customer[label]=data
   
-    @LabeledData('Customer infomation')
     def get_customer(self):
         return self._customer
 
-    def set_source(self,source):
-        #  the format of source is a List[Dict]
-        #   d=[{'Source_DB':db_name,
-        #      'Source_ID':db_id,
-        #      'Source_url':url
-        #     }]
-        self._sources = source
-           
-    @LabeledData('Source infomation')
-    def get_source(self):
-        return self._sources
+    def get_properties(self):
+        return self._properties
 
-    def set_meta(self,user=None, machine=None, ctime=None, utime=None):
-        self._user=user if user else None
-        self._machine=machine if machine else None
-        self._ctime = ctime if ctime else str(datetime.datetime.now()) 
-        self._utime = utime if ctime else str(datetime.datetime.now()) 
-
-    def get_meta(self):
-        return {"User": self._user,
-                "Machine": self._machine,
-                "Create_time": self._ctime,
-                "Update_time": self._utime}
-
-    @LabeledData("Basic properties")
-    def set_prop(self,struct_path, **kargs):
+    def set_properties(self):
         d={}
-        fname=os.path.join(struct_path,'POSCAR')
-        self.set_structure(fname=fname)
-
-        d['Structure']=self.get_structure()
-        d['Symmetry']=self.get_symmetry()
-        # calculate the Phase diagram via MP database
-        if "auto_pd" in kargs.keys():
-            auto_pd = kargs["auto_pd"]
-        else:
-            auto_pd = False
-
-        if auto_pd:
-           try:
-              energy=kargs['energy']
-           except KeyError:
-              raise RuntimeError('Energy of structure should be supplied!')
-           self.set_computed_entry(energy=energy)
-           self.set_Eabh_and_Ef_via_MPDB(save_pd=False)
-           self.set_thermo_stability(thermo=Eabh)
-        else:
-           try:
-              Eabh=kargs['Eabh']
-              self.set_Eabh(Eabh)
-              self.set_thermo_stability(thermo=Eabh)
-           except KeyError:
-              pass
-
-           try:
-              Ef=kargs['Ef']
-              self.set_Ef(Ef)
-           except KeyError:
-              pass
-
-        if 'Exfol' in kargs.keys() and self._dimension == 2:
-            self.set_Exfol(kargs['Exfol'])
-
-        d['Energy']=self.get_energy()
-
-        try:
-           magnetic_moment=kargs['magnetic_moment']
-        except KeyError:
-           magnetic_moment=None
-        
-        try:
-           magnetic_order=kargs['magnetic_order']
-        except KeyError:
-           magnetic_order=None
-
-        try:
-           exchange_energy=kargs['exchange_energy']
-        except KeyError:
-           exchange_energy=None
-        
-        self.set_magnetic( magnetic_moment = magnetic_moment, 
-                           magnetic_order = magnetic_order,
-                           exchange_energy = exchange_energy)
-
-        d['Stability']=self.get_stability()
-        if all(val is None for val in self.get_magnetic().values()):
-           pass
-        else: 
-           d['Magnetism']=self.get_magnetic()
-
-        if 'band_gaps'  in kargs.keys():
-            self.set_band_gaps( kargs['band_gaps'])
-        d['Bandgap']=self.get_band_gaps()
-
-        if 'source'  in kargs.keys():
-            self.set_source( kargs['source'])
-        d['Source']=self.get_source()
-
-        if 'meta'  in kargs.keys():
-            self.set_meta(**kargs['meta'])
-        d['Meta']=self.get_meta()
-        
-        #dumpfn(ret,'ret.json',indent=4)
+        d['thermo']=self.get_ThermoDoc()
+        d['electronicstructure']=self.get_ElectronicStructureDoc()
+        d['magnetism']=self.get_MagnetismDoc()
+        d['xrd']= self.get_XRDDoc()
+        d['raman']=self.get_RamanDoc()
+        d['source']=self.get_SourceDoc()
+        d['meta']= self.get_MetaDoc()
         self._properties=d
-
-    #@abstractmethod
-    #def task_doc(self,*arg,**karg):
-    #    """
-    #    Returns a dict for single task.
-    #    """
-
-    #def generate_doc(self):
-    #    proc_doc=self.
 
     def as_dict(self):
         init_args = {
-            "ID": self.material_id,
+            "material_id": self.material_id,
             "dataset": self.dataset,
             'dimension': self.dimension
         }
@@ -484,5 +414,4 @@ class Builder(metaclass=ABCMeta):
     @classmethod
     def from_dict(cls, d):
         return cls(**d["init_args"])
-
 
