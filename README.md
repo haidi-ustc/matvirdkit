@@ -1,6 +1,12 @@
 #  Matvird Tookit
 
-A collection of toolkits for preparing the data of matvird database
+matvirdkit stands for Material virtual design kit. This toolkit has been developed for 3 purpose. 
+
+* Describing the data schema
+
+* Parsing data from DFT calculation raw data
+
+* Supplying API request information.
 
 ### Folders
 ```
