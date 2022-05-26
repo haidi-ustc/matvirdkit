@@ -5,17 +5,8 @@ from typing import ClassVar, Mapping, Optional, Sequence, Type, TypeVar, Union,L
 from pydantic import BaseModel, Field, create_model, validator
 from pymatgen.analysis.magnetism import CollinearMagneticStructureAnalyzer, Ordering
 from pymatgen.core import Structure
-from matvirdkit.model.common import ReferenceDB,Author,Reference,History,DOI
+from matvirdkit.model.common import Author,Reference,History
 
-class Source(BaseModel):
-      description : Optional[str] = 'Source information'
-      db_name: ReferenceDB = Field(...,description='database name')
-      db_id: str = Field(...,description='material id')
-      db_url: str = Field(...,description='material url')
-
-class Sources(BaseModel):
-      description : Optional[str] = 'Sources information'
-      sources: List[Source] = Field([],description='list of sources')
 
 S = TypeVar("S", bound="PropertyDoc")
 

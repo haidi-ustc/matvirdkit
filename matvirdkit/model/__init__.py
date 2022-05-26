@@ -1,9 +1,9 @@
-from .common import ( Meta, Database, ReferenceDB,
-                     Author, DOI, Reference,History)
+from .common import ( Meta, MetaDoc, Database, ReferenceDB,
+                     Author, DOI, Reference,History ,Source, SourceDoc)
 from .electronic import Workfunction, Bandgap, EMC, Mobility, ElectronicStructureDoc
 from .magnetism import Order, Magnetism, MagnetismDoc
 from .polar import Dielectric, Piezoelectric
-from .properties import PropertyDoc,PropertyOrigin, Sources, Source
+from .properties import PropertyDoc,PropertyOrigin 
 from .provenance import ProvenanceDoc 
 from .stability import LMH, ThermoDynamicStability, PhononStability, StiffnessStability, StabilityDoc
 from .spectrum import SpectrumDoc

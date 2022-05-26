@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import ClassVar, Dict, List, Optional, Union, Tuple, Any
 from pydantic import BaseModel, Field, validator
 from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
-from matvirdkit.model.common import ReferenceDB,Author,Reference,History,DOI
 from matvirdkit.model.utils import Vector3D
 from matvirdkit.model.common import JFData, DataFigure,MatvirdBase
 

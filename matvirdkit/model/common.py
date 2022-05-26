@@ -73,9 +73,15 @@ class DataFigure(BaseModel):
     figure: JFData = Field(...,description='figure')
 
 class Meta(BaseModel):
-      description : Optional[str] = 'Meta information'
-      user : str
-      machine: str
+      description : Optional[str] = Field(None,description='Meta information')
+      user : Optional [ str ]
+      machine: Optional[ str ]
+      cpuinfo: Optional[ Dict ]
+
+class MetaDoc(BaseModel):
+      property_name: ClassVar[str] = "meta"
+      source: List[Meta] = Field([],description='list of sources')
+
 
 class Database(ValueEnum):
     """
@@ -94,6 +100,16 @@ class ReferenceDB(BaseModel):
     database_IDs: Dict[str, List[str]] = Field(
         dict(), description="Database IDs corresponding to this material"
     )
+
+class Source(BaseModel):
+      description : Optional[str] =  Field(None,description='Meta information')
+      db_name: ReferenceDB = Field(...,description='database name')
+      material_id: str = Field(...,description='material id')
+      material_url: str = Field(...,description='material url')
+
+class SourceDoc(BaseModel):
+      property_name: ClassVar[str] = "source"
+      source: List[Source] = Field([],description='list of sources')
 
 class Author(BaseModel):
     """
