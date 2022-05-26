@@ -63,7 +63,7 @@ class XRD(MatvirdBase):
     @classmethod
     def from_structure(  
         cls,
-        created_at: datetime,
+        #created_at: datetime,
         #material_id: str,
         spectrum_id: str,
         structure: Structure,
@@ -85,7 +85,7 @@ class XRD(MatvirdBase):
         #del _pattern['@class']
 
         return cls(
-            created_at=created_at,
+            #created_at=created_at,
             #material_id=material_id,
             spectrum_id=spectrum_id,
             spectrum=_pattern,
@@ -143,7 +143,7 @@ if __name__ == '__main__':
    xrddoc=XRDDoc(
          created_at=datetime.now(),
          xrd= [XRD.from_target( 
-                              created_at=datetime.now()   ,
+          #                    created_at=datetime.now()   ,
                               material_id='bms-1',
                               structure=st,
                               target= 'Cu',
