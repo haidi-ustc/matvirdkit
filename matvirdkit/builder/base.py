@@ -1,22 +1,24 @@
 import os
 import inspect
-import datetime
+from datetime import datetime
 from hashlib import sha1
 from monty.json import MSONable
 
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Tuple, Optional, Union, Iterator, Set, Sequence, Iterable
 from pymatgen.core import Structure
-from matvirdkit.model.utils import jsanitize
-from matvirdkit.builder.readstructure import structure_from_file
+from matvirdkit import log,REPO_DIR 
+from matvirdkit.model.utils import jsanitize,create_path
 from matvirdkit.model.electronic import EMC,Bandgap,Mobility,Workfunction,ElectronicStructureDoc
 from matvirdkit.model.properties import PropertyOrigin
 from matvirdkit.model.thermo import Thermo,ThermoDoc
 from matvirdkit.model.xrd import XRD,XRDDoc
 from matvirdkit.model.stability import ThermoDynamicStability,PhononStability,StiffnessStability,StabilityDoc
-from matvirdkit.model.common import Meta,MetaDoc,Source,SourceDoc
+from matvirdkit.model.common import Meta,MetaDoc,Source,SourceDoc,Task,TaskDoc
 from matvirdkit.model.magnetism import Magnetism,MagnetismDoc
 from matvirdkit.model.structure import StructureMatvird
+from matvirdkit.builder.readstructure import structure_from_file
+from matvirdkit.builder.task import VaspTask
 
 __version__ = "0.1.0"
 __author__ = "Matvird"
@@ -24,29 +26,30 @@ __author__ = "Matvird"
 def function_name():
     return inspect.stack()[1][3]
 
+supported_dataset = ['bms', 'mech2d', 'npr2d', 'penta',  'rashba'
+                     'carbon2d', 'carbon3d', 'raman'
+                     ]
 class Builder(metaclass=ABCMeta):
-    def __init__(self, material_id : str, dataset :str ='dataset', dimension : int= 3):
+    def __init__(self, material_id : str, dataset :str , dimension = None, root_dir=None ):
         self.material_id = material_id
-        self.rootpath = os.getcwd()
-        self.workpath = os.path.join(self.rootpath,dataset,material_id)
-        if os.path.isdir(self.workpath):
+        assert dataset in supported_dataset
+        self.root_dir =  root_dir if root_dir else REPO_DIR
+        self.work_dir =  os.path.join(self.root_dir,dataset,material_id)
+        if os.path.isdir(self.work_dir):
            pass
         else:
-           create_path(self.workpath,backup=False)
-
+           create_path(self.work_dir,backup=False)
         self.dimension = dimension
 
-        self._structure = None
-
         self._registered_doc=[]
-
-        self._thermo       = []  #thermo
+        self._structure = None
+        self._thermo      = []  #thermo
         self._electronicstructure  = []  #
         self._mechanics    = []
         
         self._stability    = []
         self._thermo_stability = []
-        self._stiffness_stability = []
+        self._stiff_stability = []
         self._phonon_stability    = []
 
         self._magnetism    = []
@@ -60,12 +63,15 @@ class Builder(metaclass=ABCMeta):
         self._customer     = {}
         self._origins      = {}
 
+        self._tasks = []
         self._properties   = {}
 
         self._emcs =  []
         self._bandgaps =  []
         self._mobilities =  []
         self._workfunctions =  []
+        self._doses=  []
+        self._bands=  []
 
         self._StructureDoc   = {}
         self._ThermoDoc   = {}
@@ -76,10 +82,8 @@ class Builder(metaclass=ABCMeta):
         self._MagnetismDoc={}
         self._MetaDoc = {}
         self._StabilityDoc = {}
+        self._TaskDoc = {}
 
-        #self._tasks = {}
-        self._doses=  []
-        self._bands=  []
 
     @property 
     def registered_doc(self) -> Dict:
@@ -91,42 +95,22 @@ class Builder(metaclass=ABCMeta):
 
     def get_doc(self) -> Dict:
         return { 
-                 "@module": self.__class__.__module__,
-                 "@class": self.__class__.__name__,
+                 "@module":    self.__class__.__module__,
+                 "@class":     self.__class__.__name__,
                  "material_id":self.material_id,
-                 'structure': self.get_StructureDoc(),
-                 "properties": self.get_properties(),
-                 "generated": __author__,
-                 "version": __version__
+                 'structure':  self.get_StructureDoc(),
+                 "properties": self.get_PropertiesDoc(),
+                 "tasks":      self.get_TaskDoc(),
+                 "generated":  __author__,
+                 "version":    __version__
                }
 
-    def get_properties(self) -> Dict:
+    def get_PropertiesDoc(self) -> Dict:
         return self._properties
     
-    def get_tasks(self) -> Dict:
-        return self._tasks
+    def update_properties(self, key : str, val : Dict):
+        self._properties[key] = val
 
-    def update_properties(self,val):
-        if isinstance(val,str):
-           if val=='DOS':
-              self._properties.update({val:self.get_dos()})
-           elif val=='Band':
-              self._properties.update({val:self.get_band()})
-           else:
-              pass
-        elif isinstance(val,dict):
-              self._properties.update(val)
-        else:
-             raise RuntimeError('Only support string and dict')
-
-    def update_tasks(self,val) -> None:
-        if isinstance(val,str):
-              pass
-              #self._tasks.update({val:self._doses})
-        elif isinstance(val,dict):
-              self._tasks.update(val)
-        else:
-             raise RuntimeError('Only support string and dict')
 
     def set_structure(self, fname='POSCAR') -> None:
         self._structure = structure_from_file(fname)
@@ -135,9 +119,9 @@ class Builder(metaclass=ABCMeta):
         return self._structure
 
     def set_StructureDoc(self,**kwargs) -> Union[Dict , StructureMatvird]:
-        self.__StructureDoc=StructureMatvird.from_structure(
+        self._StructureDoc=StructureMatvird.from_structure(
                            dimension=self.dimension,
-                           structure=self._structure
+                           structure=self._structure,
                            **kwargs)
 
     def get_StructureDoc(self,**kwargs) -> Union[Dict , StructureMatvird]:
@@ -157,23 +141,23 @@ class Builder(metaclass=ABCMeta):
         else:
            return self._origins
  
-    def set_thermos(self,formation_energy_per_atom=None,
+    def set_thermo(self,formation_energy_per_atom=None,
                          energy_above_hull=None,
                          energy_per_atom=None,
                          **kwargs) -> None:
-        self._thermos.append( Thermo(formation_energy_per_atom=formation_energy_per_atom,
+        self._thermo.append( Thermo(formation_energy_per_atom=formation_energy_per_atom,
                                      energy_above_hull=energy_above_hull,
                                      energy_per_atom=energy_per_atom,**kwargs))
 
-    def get_thermos(self) -> Dict:
-         return self._thermos
+    def get_thermo(self) -> Dict:
+         return self._thermo
     
-    def set_ThermoDoc(self, created_at, **kwargs) -> None:
+    def set_ThermoDoc(self, created_at = None, **kwargs) -> None:
         created_at = created_at if created_at else datetime.now()  
         self._ThermoDoc=ThermoDoc(created_at = created_at ,
-                         thermos = self.get_thermos(),
+                         thermo = self.get_thermo(),
                          origins = self.get_origins('thermo'),
-                         material_id = self._material_id,
+                         material_id = self.material_id,
                          **kwargs)
         self.registery_doc(function_name().split('_')[-1])
 
@@ -214,7 +198,7 @@ class Builder(metaclass=ABCMeta):
     def set_ElectronicStructureDoc(self,  created_at, **kwargs) -> None: 
         created_at = created_at if created_at else datetime.now()
         self._ElectronicStructureDoc=ElectronicStructureDoc(created_at = created_at ,
-                         material_id = self._material_id,
+                         material_id = self.material_id,
                          origins  = self.get_origins('eletronicstructure'),
                          bandgaps = self.get_bandgaps(),
                          emcs     = self.get_emcs(),
@@ -237,13 +221,13 @@ class Builder(metaclass=ABCMeta):
                                          magnetic_anisotropy = magnetic_anisotropy,
                                          **kwargs))
 
-    def get_magnetism(self) -> Dict:
+    def get_magnetism(self) -> List:
         return self._magnetism
 
-    def set_MagnetismDoc(self,  created_at, **kwargs) -> None:
+    def set_MagnetismDoc(self,  created_at = None, **kwargs) -> None:
         created_at = created_at if created_at else datetime.now()
         self._MagnetismDoc=MagnetismDoc(created_at = created_at ,
-                         material_id = self._material_id,
+                         material_id = self.material_id,
                          magnetism = self.get_magnetism(),
                          origins  = self.get_origins('magnetism'),
                          **kwargs)
@@ -259,35 +243,35 @@ class Builder(metaclass=ABCMeta):
                          target = target,
                          edge = edge,
                          min_two_theta = min_two_theta,
-                         max_two_theta = mix_two_theta,
+                         max_two_theta = max_two_theta,
                          **kwargs
                        ))  
 
-    def get_xrd(self) -> Dict:
+    def get_xrd(self) -> List:
         return self._xrd
 
-    def set_XRDDoc(self,  created_at, **kwargs) -> None:
+    def set_XRDDoc(self,  created_at = None, **kwargs) -> None:
         created_at = created_at if created_at else datetime.now()
         self._XRDDoc= XRDDoc(created_at = created_at ,
-                         material_id = self._material_id,
+                         material_id = self.material_id,
                          xrd = self.get_xrd(),
                          origins  = self.get_origins('xrd'),
                          **kwargs)
         self.registery_doc(function_name().split('_')[-1])
 
     def get_XRDDoc(self) -> Union[Dict , XRDDoc]:
-        return self._XRDDOc   
+        return self._XRDDoc   
 
     #----------------- Sources ------------
 
-    def set_sources(self, db_name, material_id, material_url, description=''):
+    def set_sources(self, db_name , material_id, material_url = '', description=''):
         self._sources.append(Source(
                                    db_name=db_name,   
                                    material_id = material_id,   
                                    material_url = material_url,   
                                    description = description   
                                    ))
-    def get_sources(self) -> Dict:
+    def get_sources(self) -> List:
         return self._sources
     
     def set_SourceDoc(self) -> None:
@@ -299,14 +283,14 @@ class Builder(metaclass=ABCMeta):
 
     #----------------- Meta ------------
 
-    def set_meta(self, user, machine, cpuinfo, description='') -> None:
+    def set_meta(self, user = '', machine = '', cpuinfo = {}, description='') -> None:
         self._meta.append(Meta(
                               user=user,   
                               machine = machine,   
                               cpuinfo = cpuinfo,   
                               description = description   
                                    ))
-    def get_meta(self) -> Dict:
+    def get_meta(self) -> List:
         return self._meta
     
     def set_MetaDoc(self) -> None:
@@ -316,15 +300,15 @@ class Builder(metaclass=ABCMeta):
     def get_MetaDoc(self) -> Union[Dict, MetaDoc]:
         return self._MetaDoc
 
-
+    #------------------------------------------------
     def set_dos(self,path, label='',  code= 'vasp', auto = False, **kwargs):
         d={}
         if code.lower() =='vasp':
            if auto:
               electronic_structure=ElectronicStructure(path,**kwargs)
-              d=electronic_structure.get_dos_auto(self.workpath)
+              d=electronic_structure.get_dos_auto(self.work_dir)
            else:
-              d=ElectronicStructure(path,**kwargs).get_dos_manually(self.material_id,src_path=path,dst_path=self.workpath)
+              d=ElectronicStructure(path,**kwargs).get_dos_manually(self.material_id,src_path=path,dst_path=self.work_dir)
 
         elif code.lower() == 'siesta':
            pass
@@ -368,7 +352,7 @@ class Builder(metaclass=ABCMeta):
     def get_thermo_stability(self) -> ThermoDynamicStability:
         return self._thermo_stability
 
-    def set_StabilityDoc(self,  created_at, **kwargs) -> None:
+    def set_StabilityDoc(self,  created_at= None, **kwargs) -> None:
 
         # the origin of stiff, thermo and origins can be distinct by name .e.g.
         # set_origins('stability',task_id,name='stiff',link=[])
@@ -377,7 +361,7 @@ class Builder(metaclass=ABCMeta):
 
         created_at = created_at if created_at else datetime.now()
         self._StabilityDoc= StabilityDoc(created_at = created_at ,
-                         material_id = self._material_id,
+                         material_id = self.material_id,
                          stiff_stability = self.get_stiff_stability(),
                          thermo_stability = self.get_thermo_stability(),
                          phonon_stability = self.get_phonon_stability(),
@@ -396,18 +380,23 @@ class Builder(metaclass=ABCMeta):
     def get_customer(self):
         return self._customer
 
-    def get_properties(self):
-        return self._properties
-    
     #---------------------------------------
-    def set_properties(self):
+    def get_PropertiesDoc(self):
+        return self._properties
+
+    def set_properties(self,exclude=['TaskDoc']):
         d={}
         for doc in self.registered_doc:
-            func = getattr(self, 'get_'+doc)
-            log.debug('function name %s'%func.__name__)
-            d[doc] = func()
+            if doc in exclude:
+               func = getattr(self, 'get_'+doc)
+               log.debug('skip function:  %s'%func.__name__)
+            else:
+               func = getattr(self, 'get_'+doc)
+               log.debug('invoke function: %s'%func.__name__)
+               d[doc] = func()
         self._properties=d
 
+    #---------------------------------
     def as_dict(self):
         init_args = {
             "material_id": self.material_id,
@@ -423,6 +412,31 @@ class Builder(metaclass=ABCMeta):
     @classmethod
     def from_dict(cls, d):
         return cls(**d["init_args"])
+
+    #----------------- Task ------------
+    def encode_task(self,task_dir, code='vasp', **kwargs ):
+        if code=='vasp':
+           task_id,calc_type = VaspTask( task_dir = task_dir,
+                                          root_dir = self.root_dir,
+                                          **kwargs)
+        return task_id, calc_type
+
+    def set_task(self, task_id , code= 'vasp', calc_type = '' , description='') -> None:
+        self._tasks.append(Task(
+                              task_id=task_id,   
+                              code = code,   
+                              calc_type = calc_type,   
+                              description = description   
+                                   ))
+    def get_task(self) -> List:
+        return self._tasks
+    
+    def set_TaskDoc(self) -> None:
+        self._TaskDoc =  TaskDoc(task=self.get_task())
+        self.registery_doc(function_name().split('_')[-1])
+
+    def get_TaskDoc(self) -> Union[Dict, TaskDoc]:
+        return self._TaskDoc
 
     #-----------------Raman spetrum------------
     def get_raman(self):
@@ -473,6 +487,48 @@ class Builder(metaclass=ABCMeta):
         pass
 
 if __name__ == '__main__':
+   from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import test_path
    task_dir=os.path.join(test_path(),'relax')
-   #parsing_task(task_dir,tags=['relax'])
+   builder=Builder(material_id = 'bms-1', dataset = 'bms')
+   #------structure
+   builder.set_structure(fname=os.path.join(task_dir,'POSCAR'))
+   builder.set_StructureDoc()
+   #------tasks
+   task_id,calc_type = builder.encode_task(task_dir,code='vasp')
+   print('task_id : %s  calc_type: %s'%(task_id,calc_type))
+   builder.set_task( task_id = task_id, code= 'vasp', calc_type = str(calc_type) , description='This is a relax task')
+   builder.set_TaskDoc()
+   #------thermo
+   builder.set_thermo(formation_energy_per_atom=-0.1,
+                         energy_above_hull=0.01,
+                         energy_per_atom=-3.2)
+   builder.set_ThermoDoc()
+   #------magnetism
+   builder.set_magnetism(magneatic_moment = 3.0, magnetic_order = 'FiM',
+                           exchange_energy = None, magnetic_anisotropy= {})
+   builder.set_MagnetismDoc()
+   #------stability
+   builder.set_stiff_stability(value='low')
+   builder.set_phonon_stability(value='high')
+   #builder.set_thermo_stability(value='middle')
+   builder.set_StabilityDoc()
+   #------XRD
+   builder.set_xrd()
+   builder.set_XRDDoc()
+   #------source
+   builder.set_sources(db_name='c2db', material_id='As4Ca4-bf7bbbdbefe0', material_url='https://cmrdb.fysik.dtu.dk/c2db/row/As4Ca4-bf7bbbdbefe0')
+   builder.set_sources(db_name='icsd', material_id='22388')
+   builder.set_SourceDoc()
+   #------meta
+   builder.set_meta(user ='haidi', machine ='cluster@HFUT',  description='cluster-88')
+   builder.set_meta(user ='ergouzi', machine ='cluster@USTC',  description='cluster-10')
+   builder.set_MetaDoc()
+
+   builder.set_properties()
+   builder.update_properties(key='TestDoc',val={'name':'wang','age':18})
+   doc=jsanitize(builder.get_doc())
+   dumpfn(doc,'doc.json',indent=4)
+   dumpfn(doc,'toc.json')
+
+   #set_origins(self,key,task_id,name='',link=[],append=False)

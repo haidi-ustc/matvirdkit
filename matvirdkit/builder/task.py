@@ -5,10 +5,10 @@ from monty.serialization import loadfn,dumpfn
 from matvirdkit import log,REPO_DIR 
 from matvirdkit.model.utils import jsanitize
 from matvirdkit.model.utils import create_path
-from matvirdkit.model.vasp.task import TaskDocument
+from matvirdkit.model.vasp.task import TaskDocument as VaspTaskDocument
 from matvirdkit.model.utils import sha1encode,task_tag
 
-def parsing_task(task_dir,task_id=None,root_dir=REPO_DIR,**kwargs):
+def VaspTask(task_dir,root_dir=REPO_DIR,**kwargs):
       
     log.info('Start')
     pwd=os.getcwd()
@@ -21,9 +21,10 @@ def parsing_task(task_dir,task_id=None,root_dir=REPO_DIR,**kwargs):
 
     log.debug('Temperory dir: %s'%(out_dir))
     create_path(out_dir)
-    td=TaskDocument.from_directory(task_id=task_id,
+    td=VaspTaskDocument.from_directory(task_id=task_id,
                                   task_dir=task_dir,
                                   dst_dir=out_dir,**kwargs)
+    calc_type =  td.calc_type
     td=jsanitize(td)
     encode=sha1encode(td['input'])
     log.info('Self-encode task id is : %s'%encode)
@@ -42,9 +43,10 @@ def parsing_task(task_dir,task_id=None,root_dir=REPO_DIR,**kwargs):
      
     os.chdir(pwd)
     log.info('finished!')
-    return encode
+    return encode, calc_type
 
 if __name__ == '__main__':
    from matvirdkit.model.utils import test_path
    task_dir=os.path.join(test_path(),'relax')
-   parsing_task(task_dir,tags=['relax']) 
+   encode,calc_type=parsing_task(task_dir,tags=['relax']) 
+   print('encode : %s  calc_type: %s'%(encode,calc_type))
