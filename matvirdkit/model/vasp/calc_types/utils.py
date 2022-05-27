@@ -129,15 +129,17 @@ def calc_type(
     return CalcType(f"{rt} {tt}")
 
 if __name__== '__main__':
+   import os
    from pymatgen.io.vasp import Incar
    from pymatgen.io.vasp import Vasprun,VaspInput
-   #incar=Incar.from_file("INCAR_dos")
-   # have debug
-   #print(run_type(incar.as_dict()))
-   #
-   vr=Vasprun('./tests/vasprun_dos.xml',  parse_potcar_file= True)
+   from matvirdkit.model.utils import test_path,create_path
+   from monty.serialization import loadfn,dumpfn
+   #relax_dir=os.path.join(test_path('..'),'relax')
+   #print(relax_dir)
+   #os._exit(0)
+   vr=Vasprun('../../../../tests/relax/vasprun.xml',  parse_potcar_file= True)
    rt=run_type(vr.parameters)
-   vi=VaspInput.from_directory('relax')
+   vi=VaspInput.from_directory('../../../../tests/relax/')
    vid=vi.as_dict()
    d={}
    for _input in [ "poscar", "kpoints", "potcar"]:

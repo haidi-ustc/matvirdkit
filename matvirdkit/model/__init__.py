@@ -1,4 +1,4 @@
-from .common import ( Meta, MetaDoc, Database, ReferenceDB,
+from .common import ( Meta, MetaDoc,  ReferenceDB,
                      Author, DOI, Reference,History ,Source, SourceDoc)
 from .electronic import Workfunction, Bandgap, EMC, Mobility, ElectronicStructureDoc
 from .magnetism import Order, Magnetism, MagnetismDoc

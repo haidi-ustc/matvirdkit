@@ -80,10 +80,19 @@ class Meta(BaseModel):
 
 class MetaDoc(BaseModel):
       property_name: ClassVar[str] = "meta"
-      source: List[Meta] = Field([],description='list of sources')
+      meta: List[Meta] = Field([],description='list of metas')
 
+class Task(BaseModel):
+      description : Optional[str] = Field(None,description='Task information')
+      task_id : Optional [ str ] 
+      code: Optional [str]
+      calc_type : Optional [str] =  Field('Unknown')
 
-class Database(ValueEnum):
+class TaskDoc(BaseModel):
+      property_name: ClassVar[str] = "task"
+      task: List[Task] = Field([],description='list of tasks')
+
+class ReferenceDB(ValueEnum):
     """
     Database identifiers for provenance IDs
     """
@@ -95,17 +104,18 @@ class Database(ValueEnum):
     OQMD = 'oqmd'
     MatPedia2D='2dmatpedia'
     C2DB='c2db'
+    
 
-class ReferenceDB(BaseModel):
-    database_IDs: Dict[str, List[str]] = Field(
-        dict(), description="Database IDs corresponding to this material"
-    )
+#class ReferenceDB(BaseModel):
+#    database_IDs: Dict[str, List[str]] = Field(
+#        dict(), description="Database IDs corresponding to this material"
+#    )
 
 class Source(BaseModel):
       description : Optional[str] =  Field(None,description='Meta information')
-      db_name: ReferenceDB = Field(...,description='database name')
-      material_id: str = Field(...,description='material id')
-      material_url: str = Field(...,description='material url')
+      db_name: ReferenceDB = Field(None,description='database name')
+      material_id: str = Field(None,description='material id')
+      material_url: str = Field(None,description='material url')
 
 class SourceDoc(BaseModel):
       property_name: ClassVar[str] = "source"

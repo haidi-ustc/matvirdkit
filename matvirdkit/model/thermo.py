@@ -147,7 +147,7 @@ class ThermoDoc(PropertyDoc):
       property_name: ClassVar[str] = Field(
         "thermo", description="The subfield name for this property"
          )
-      thermos: List[Thermo]=Field(None, description='Thermo list')
+      thermo: List[Thermo]=Field(None, description='Thermo list')
 
 if __name__=='__main__':
    from uuid import uuid4
@@ -155,7 +155,7 @@ if __name__=='__main__':
    from matvirdkit.model.utils import jsanitize,ValueEnum
    ustr=str(uuid4())
    pd=ThermoDoc(created_at=datetime.now(),
-      thermos=[
+      thermo=[
                 Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3,description='pbe-static',link= [ustr]),
                 Thermo(energy_above_hull=0.1, uncorrected_energy_per_atom=-2.4,description='pbe-static-d2')
                ],

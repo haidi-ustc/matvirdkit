@@ -28,7 +28,7 @@ class MagnetismDoc(PropertyDoc):
     """
     property_name: ClassVar[str] = "magnetism"
 
-    magnetisms: List[Magnetism] = Field(None, description='Magnetic information')
+    magnetism: List[Magnetism] = Field(None, description='Magnetic information')
 
 
 if __name__=='__main__': 
