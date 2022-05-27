@@ -8,7 +8,7 @@ from matvirdkit.model.utils import create_path
 from matvirdkit.model.vasp.task import TaskDocument
 from matvirdkit.model.utils import sha1encode,task_tag
 
-def parsing_task(task_dir,task_id=None,root_dir=REPO_DIR,**kargs):
+def parsing_task(task_dir,task_id=None,root_dir=REPO_DIR,**kwargs):
       
     log.info('Start')
     pwd=os.getcwd()
@@ -23,7 +23,7 @@ def parsing_task(task_dir,task_id=None,root_dir=REPO_DIR,**kargs):
     create_path(out_dir)
     td=TaskDocument.from_directory(task_id=task_id,
                                   task_dir=task_dir,
-                                  dst_dir=out_dir,**kargs)
+                                  dst_dir=out_dir,**kwargs)
     td=jsanitize(td)
     encode=sha1encode(td['input'])
     log.info('Self-encode task id is : %s'%encode)

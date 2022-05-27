@@ -18,7 +18,7 @@ S = TypeVar("S", bound="StiffnessStability")
 class ThermoDynamicStability(MatvirdBase):
       value: LMH = Field(None, description='stability from thermodynamic')
       @classmethod
-      def from_value(
+      def from_key(
           cls: Type[T],
 	  formation_energy_per_atom: float,
 	  energy_above_hull: float,
@@ -48,7 +48,7 @@ class ThermoDynamicStability(MatvirdBase):
 class PhononStability(MatvirdBase):
       value: LMH = Field(None, description='stability from phonons')
       @classmethod
-      def from_value(
+      def from_key(
           cls: Type[P],
 	  max_hessian: float,
 	  fields: Optional[List[str]] = None,
@@ -75,7 +75,7 @@ class PhononStability(MatvirdBase):
 class StiffnessStability(MatvirdBase):
       value: LMH = Field(None, description='stability from stiffness')
       @classmethod
-      def from_value(
+      def from_key(
           cls: Type[S],
 	  min_eig_tensor: float,
 	  fields: Optional[List[str]] = None,
@@ -107,14 +107,14 @@ class StabilityDoc(PropertyDoc):
     property_name: ClassVar[str] = "stability"
     stiff_stability: List[StiffnessStability]  = Field([StiffnessStability()], description='stiff stability information')
     thermo_stability: List[ThermoDynamicStability]  = Field([ThermoDynamicStability()], description='thermo stability information')
-    phon_stability: List[PhononStability]  = Field([PhononStability()], description='phon stability information')
+    phonon_stability: List[PhononStability]  = Field([PhononStability()], description='phon stability information')
 
 if __name__=='__main__': 
    ustr1=str(uuid.uuid4())
    ustr2=str(uuid.uuid4())
    pd=StabilityDoc(created_at=datetime.now(),
-           stiff_stability =  [  StiffnessStability.from_value(min_eig_tensor=0.1) ],
-           thermo_stability=  [ ThermoDynamicStability.from_value (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static',link= [ustr2 ]) ],
+           stiff_stability =  [  StiffnessStability.from_key(min_eig_tensor=0.1) ],
+           thermo_stability=  [ ThermoDynamicStability.from_key (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static',link= [ustr2 ]) ],
       origins=[
               PropertyOrigin(name='static',task_id='task-112',link=[ustr1]),
               PropertyOrigin(name='static',task_id='task-113',link=[ustr2]),
