@@ -9,7 +9,7 @@ from matvirdkit.model.utils import VoigtVector,Matrix3D,Vector3D,YesOrNo
 from matvirdkit.model.utils import ElasticTensor, ValueEnum
 from matvirdkit.model.common import DataFigure,JFData,MatvirdBase
 
-M2S = TypeVar("M2", bound="Mechanics2DSummary")
+M2S = TypeVar("M2", bound="Mechanics2dSummary")
 M3S = TypeVar("M3", bound="Mechanics3DSummary")
 
 class ApproachAndProperty(ValueEnum):
@@ -17,7 +17,7 @@ class ApproachAndProperty(ValueEnum):
       elc_stress="elc_stress"
       ssc_stress="ssc_stress"
 
-class Direction2D(ValueEnum):
+class Direction2d(ValueEnum):
       xx='Def_xx'
       xy='Def_xy'
       yy='Def_yy'
@@ -27,13 +27,13 @@ class MechanicsBase(MatvirdBase):
     s_tensor : ElasticTensor = Field(None, description='stiffness tensor ') 
     c_tensor : ElasticTensor = Field(None, description='compliance tensor ') 
 
-class Mechanics2DSummary(MechanicsBase):
-      Lm:   float = Field(None,description='2D layer modulus (N/m)')
-      Y10:  float = Field(None,description='2D Young\'s modulus Y[10] (N/m)')
-      Y01:  float = Field(None,description='2D Young\'s modulus Y[01] (N/m)')
-      Gm:   float = Field(None,description='2D Shear modulus G (N/m)')
-      V10:  float = Field(None,description='2D Poisson ratio v[10]')
-      V01:  float = Field(None,description='2D Poisson ratio v[01]')
+class Mechanics2dSummary(MechanicsBase):
+      Lm:   float = Field(None,description='2d layer modulus (N/m)')
+      Y10:  float = Field(None,description='2d Young\'s modulus Y[10] (N/m)')
+      Y01:  float = Field(None,description='2d Young\'s modulus Y[01] (N/m)')
+      Gm:   float = Field(None,description='2d Shear modulus G (N/m)')
+      V10:  float = Field(None,description='2d Poisson ratio v[10]')
+      V01:  float = Field(None,description='2d Poisson ratio v[01]')
       stability:  YesOrNo = Field(None,description='stable or not')
       @classmethod
       def from_file(
@@ -74,18 +74,18 @@ class Mechanics2DSummary(MechanicsBase):
 class Mechanics3D(BaseModel):
       description : Optional[str] = ''
 
-class Mechanics2D(BaseModel):
-      summary:  Dict[ApproachAndProperty,Mechanics2DSummary] = Field(None, description='Summary of 2D mechanical properties')
+class Mechanics2d(BaseModel):
+      summary:  Dict[ApproachAndProperty,Mechanics2dSummary] = Field(None, description='Summary of 2d mechanical properties')
       polar_EV: Dict[ApproachAndProperty,DataFigure] = Field(None, description='Angle dependent Young\'s modulus and Poisson\'s ratio information')
-      stress_strain: Dict[ApproachAndProperty,Dict[Direction2D,DataFigure]] = Field(None, description='Stress-strain Curve for different direction')
+      stress_strain: Dict[ApproachAndProperty,Dict[Direction2d,DataFigure]] = Field(None, description='Stress-strain Curve for different direction')
       meta:  Dict[ApproachAndProperty,Any] = Field(None, description='meta information for mechanical properties calculation')
 
-class Mechanics2DDoc(PropertyDoc):
+class Mechanics2dDoc(PropertyDoc):
     """
     An Mechanics  property block
     """
     property_name: ClassVar[str] = "mechanics2d"
-    mechanics2d: List[Mechanics2D] = Field([], description='2D Mechanics information')
+    mechanics2d: List[Mechanics2d] = Field([], description='2d Mechanics information')
 
 class Mechanics3DDoc(PropertyDoc):
     """
@@ -108,14 +108,14 @@ if __name__=='__main__':
         json_file_name='./dataset.mech2d/m2d-1/meta.json',json_id=None,meta={})
    fig=JFData(description='EV figure',
         file_fmt='png', file_name='./dataset.mech2d/m2d-1/EV.png',file_id=None)
-   summary= Mechanics2DSummary.from_file(fname=os.path.join(task_dir,'Result.json'),link=['2312abc'])
-   _Mechanics2D = Mechanics2D(**{ 
+   summary= Mechanics2dSummary.from_file(fname=os.path.join(task_dir,'Result.json'),link=['2312abc'])
+   _Mechanics2d = Mechanics2d(**{ 
          'summary':  {'elc_energy':summary},
          'polar_EV': {"elc_energy": DataFigure(data=[data],figure=fig)},
          'meta': {"elc_energy": meta},
         })
-   pd=Mechanics2DDoc(created_at=datetime.now(),
-      mechanics2d= [_Mechanics2D],
+   pd=Mechanics2dDoc(created_at=datetime.now(),
+      mechanics2d= [_Mechanics2d],
       origins=[
             PropertyOrigin(name='static',task_id='task-110',link=[ustr]),
             PropertyOrigin(name='static',task_id='task-111',link=[ustr]),

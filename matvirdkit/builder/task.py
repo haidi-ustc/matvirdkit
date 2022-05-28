@@ -48,5 +48,5 @@ def VaspTask(task_dir,root_dir=REPO_DIR,**kwargs):
 if __name__ == '__main__':
    from matvirdkit.model.utils import test_path
    task_dir=os.path.join(test_path(),'relax')
-   encode,calc_type=parsing_task(task_dir,tags=['relax']) 
+   encode,calc_type=VaspTask(task_dir,tags=['relax']) 
    print('encode : %s  calc_type: %s'%(encode,calc_type))

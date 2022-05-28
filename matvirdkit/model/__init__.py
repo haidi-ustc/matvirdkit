@@ -13,4 +13,4 @@ from .symmetry import CrystalSystem, SymmetryData
 from .utils import ValueEnum, DocEnum, YesOrNo
 from .xrd import Edge, XRDDoc
 from .bms import BMS,BMSDoc
-from .mechanics import  Mechanics3D, Mechanics2D, Mechanics3DDoc, Mechanics2DDoc
+from .mechanics import  Mechanics3D, Mechanics2d, Mechanics3DDoc, Mechanics2dDoc
