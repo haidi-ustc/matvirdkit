@@ -35,9 +35,9 @@ if __name__=='__main__':
    ustr=str(uuid.uuid4())
    pd=MagnetismDoc(created_at=datetime.now(),
       magnetisms=[
-                Magnetism(magnetic_order='FM',magneatic_moment=1.3,label='pbe-static',link=[ustr]),
+                Magnetism(magnetic_order='FM',magneatic_moment=1.3,label='pbe-static'),
                ],
-      origins=[PropertyOrigin(name='static',task_id='task-112',link=[ustr])],
+      origins=[PropertyOrigin(name='static',task_id='task-112')],
       material_id='rsb-1',
       tags = ['high temperature phase']
       )

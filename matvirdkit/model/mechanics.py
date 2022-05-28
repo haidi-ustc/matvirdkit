@@ -108,7 +108,7 @@ if __name__=='__main__':
         json_file_name='./dataset.mech2d/m2d-1/meta.json',json_id=None,meta={})
    fig=JFData(description='EV figure',
         file_fmt='png', file_name='./dataset.mech2d/m2d-1/EV.png',file_id=None)
-   summary= Mechanics2dSummary.from_file(fname=os.path.join(task_dir,'Result.json'),link=['2312abc'])
+   summary= Mechanics2dSummary.from_file(fname=os.path.join(task_dir,'Result.json'))
    _Mechanics2d = Mechanics2d(**{ 
          'summary':  {'elc_energy':summary},
          'polar_EV': {"elc_energy": DataFigure(data=[data],figure=fig)},
@@ -117,9 +117,9 @@ if __name__=='__main__':
    pd=Mechanics2dDoc(created_at=datetime.now(),
       mechanics2d= [_Mechanics2d],
       origins=[
-            PropertyOrigin(name='static',task_id='task-110',link=[ustr]),
-            PropertyOrigin(name='static',task_id='task-111',link=[ustr]),
-            PropertyOrigin(name='static',task_id='task-112',link=[ustr])
+            PropertyOrigin(name='static',task_id='task-110'),
+            PropertyOrigin(name='static',task_id='task-111'),
+            PropertyOrigin(name='static',task_id='task-112')
            ],
       material_id='m2d-1',
       tags = ['experimental phase','NPR']

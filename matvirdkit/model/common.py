@@ -11,7 +11,7 @@ from matvirdkit.model.utils import ValueEnum
 class MatvirdBase(BaseModel):
       description : Optional[str] = ''
       label: Optional[str] = ''
-      link: List[str] = Field([])
+      #link: List[str] = Field([])
       meta: Dict[str,Any]  = Field({}, description='meta information')
 
 class JFData(MatvirdBase):

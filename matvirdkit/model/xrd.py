@@ -149,7 +149,7 @@ if __name__ == '__main__':
                               target= 'Cu',
                               edge= "Ka", 
                               min_two_theta=0,
-                              max_two_theta=180,link=['a1b2c3'])  
+                              max_two_theta=180)  
           ],
        material_id='bms-1',
       )

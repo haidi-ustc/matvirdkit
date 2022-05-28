@@ -21,12 +21,12 @@ class BMSDoc(PropertyDoc):
 
 if __name__=='__main__': 
    import os
-   ustr=str(uuid.uuid4())
+   #ustr=str(uuid.uuid4())
    pd=BMSDoc(created_at=datetime.now(),
       bms=[
-               BMS(delta_1=0.2, delta_2=0.3, delta_3= 0.4 ,description='hse static calculation',label='HSE-Static',link=[ustr]),
+               BMS(delta_1=0.2, delta_2=0.3, delta_3= 0.4 ,description='hse static calculation',label='HSE-Static'),
                ],
-      origins=[PropertyOrigin(name='static',task_id='task-112',link=[ustr])],
+      origins=[PropertyOrigin(name='bms',task_id='task-112')],
       material_id='bms-1',
       tags = ['experimental phase']
       )

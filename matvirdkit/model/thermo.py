@@ -153,13 +153,12 @@ if __name__=='__main__':
    from uuid import uuid4
    from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import jsanitize,ValueEnum
-   ustr=str(uuid4())
    pd=ThermoDoc(created_at=datetime.now(),
       thermo=[
-                Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3,description='pbe-static',link= [ustr]),
+                Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3,description='pbe-static'),
                 Thermo(energy_above_hull=0.1, uncorrected_energy_per_atom=-2.4,description='pbe-static-d2')
                ],
-      origins=[PropertyOrigin(name='static',task_id='task-112',link=[ustr])],
+      origins=[PropertyOrigin(name='static',task_id='task-112')],
       material_id='rsb-1',
       tags = ['high temperature phase']
       )

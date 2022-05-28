@@ -6,7 +6,7 @@ from matvirdkit.model.utils import jsanitize,ValueEnum
 from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
 from matvirdkit.model.common import MatvirdBase
 
-class LMH(ValueEnum):
+class StabilityLevel(ValueEnum):
       low='low'
       middle='middle'
       high='high'
@@ -16,7 +16,7 @@ P = TypeVar("P", bound="PhononStability")
 S = TypeVar("S", bound="StiffnessStability")
 
 class ThermoDynamicStability(MatvirdBase):
-      value: LMH = Field(None, description='stability from thermodynamic')
+      value: StabilityLevel = Field(None, description='stability from thermodynamic')
       @classmethod
       def from_key(
           cls: Type[T],
@@ -35,18 +35,18 @@ class ThermoDynamicStability(MatvirdBase):
           )
 
           if formation_energy_per_atom > 0.2 :
-             value=LMH.low           
+             value=StabilityLevel.low           
           elif   formation_energy_per_atom > 0.2+ energy_above_hull and formation_energy_per_atom < 0.2:
-             value=LMH.middle
+             value=StabilityLevel.middle
           else:
-             value=LMH.high
+             value=StabilityLevel.high
           data={
                 'value': value,
                 }
           return cls(**{k: v for k, v in data.items() if k in fields}, **kwargs)
 
 class PhononStability(MatvirdBase):
-      value: LMH = Field(None, description='stability from phonons')
+      value: StabilityLevel = Field(None, description='stability from phonons')
       @classmethod
       def from_key(
           cls: Type[P],
@@ -64,16 +64,16 @@ class PhononStability(MatvirdBase):
           )
 
           if max_hessian <= -0.01 :
-             value=LMH.low           
+             value=StabilityLevel.low           
           else:
-             value=LMH.high
+             value=StabilityLevel.high
           data={
                 'value': value,
                 }
           return cls(**{k: v for k, v in data.items() if k in fields}, **kwargs)
 
 class StiffnessStability(MatvirdBase):
-      value: LMH = Field(None, description='stability from stiffness')
+      value: StabilityLevel = Field(None, description='stability from stiffness')
       @classmethod
       def from_key(
           cls: Type[S],
@@ -91,9 +91,9 @@ class StiffnessStability(MatvirdBase):
           )
 
           if min_eig_tensor <= 0 :
-             value=LMH.low           
+             value=StabilityLevel.low           
           else:
-             value=LMH.high
+             value=StabilityLevel.high
           data={
                 'value': value,
                 }
@@ -114,10 +114,10 @@ if __name__=='__main__':
    ustr2=str(uuid.uuid4())
    pd=StabilityDoc(created_at=datetime.now(),
            stiff_stability =  [  StiffnessStability.from_key(min_eig_tensor=0.1) ],
-           thermo_stability=  [ ThermoDynamicStability.from_key (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static',link= [ustr2 ]) ],
+           thermo_stability=  [ ThermoDynamicStability.from_key (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static') ],
       origins=[
-              PropertyOrigin(name='static',task_id='task-112',link=[ustr1]),
-              PropertyOrigin(name='static',task_id='task-113',link=[ustr2]),
+              PropertyOrigin(name='static',task_id='task-112'),
+              PropertyOrigin(name='static',task_id='task-113'),
                ],
       material_id='rsb-1',
       tags = ['high temperature phase']

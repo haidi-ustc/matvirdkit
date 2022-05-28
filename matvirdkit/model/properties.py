@@ -23,7 +23,7 @@ class PropertyOrigin(BaseModel):
         description="The timestamp when this calculation was last updated",
         default_factory=datetime.utcnow,
     )
-    link: List[str]= Field([], description='a link to connect the properties')
+    #link: List[str]= Field([], description='a link to connect the properties')
 
 class PropertyDoc(BaseModel):
     """

@@ -49,9 +49,9 @@ if __name__=='__main__':
    ustr=str(uuid.uuid4())
    data_hse=JFData(description='DOS data', 
         file_fmt='txt', file_name='./dataset.bms/bms-1/DOSCAR-hse',file_id=None,  
-        json_file_name='dos.json',json_id=None,meta={}, link=[ustr])
+        json_file_name='dos.json',json_id=None,meta={} )
    fig_hse=JFData(description='DOS figure', 
-        file_fmt='png', file_name='./dataset.bms/bms-1/dos-hse.png',file_id=None,link=[ustr])
+        file_fmt='png', file_name='./dataset.bms/bms-1/dos-hse.png',file_id=None)
    data_pbe=JFData(description='DOS data', 
         file_fmt='txt', file_name='./dataset.bms/bms-1/DOSCAR-pbe',file_id=None,  
         json_file_name='dos.json',json_id=None,meta={})
@@ -59,9 +59,9 @@ if __name__=='__main__':
         file_fmt='png', file_name='./dataset.bms/bms-1/dos-pbe.png',file_id=None)
    pd=ElectronicStructureDoc(created_at=datetime.now(),
       bandgaps=[Bandgap(value=1.1,direct=True,description='HSE-low-kp'),
-                Bandgap(value=0.8,direct=True,description='PBE',link=[ustr]) 
+                Bandgap(value=0.8,direct=True,description='PBE') 
                ],
-      origins=[PropertyOrigin(name='band',task_id='task-1123',link=[ustr]),
+      origins=[PropertyOrigin(name='band',task_id='task-1123'),
                PropertyOrigin(name='band',task_id='task-1124'),
                ],
       emcs =[ EMC(k_loc='Gamma',b_loc='VB',value=0.3,description='PBE'),
