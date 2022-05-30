@@ -1,8 +1,11 @@
 import os
 import inspect
+import pandas as pd
+from pprint import pprint
 from datetime import datetime
 from hashlib import sha1
 from monty.json import MSONable
+from matvirdkit.model.utils import jsanitize
 
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Tuple, Optional, Union, Iterator, Set, Sequence, Iterable
@@ -14,14 +17,15 @@ from matvirdkit.model.properties import PropertyOrigin
 from matvirdkit.model.thermo import Thermo,ThermoDoc
 from matvirdkit.model.xrd import XRD,XRDDoc
 from matvirdkit.model.stability import ThermoDynamicStability,PhononStability,StiffnessStability,StabilityDoc
-from matvirdkit.model.common import Meta,MetaDoc,Source,SourceDoc,Task,TaskDoc
+from matvirdkit.model.common import Meta,MetaDoc,Source,SourceDoc,Task,TaskDoc,DataFigure, JFData
 from matvirdkit.model.magnetism import Magnetism,MagnetismDoc
 from matvirdkit.model.structure import StructureMatvird
 from matvirdkit.model.mechanics import Mechanics2d,Mechanics2dDoc
+from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin
+from matvirdkit.model.electronic import Workfunction, Bandgap, EMC, Mobility, ElectronicStructureDoc,ElectronicStructure
 from matvirdkit.builder.readstructure import structure_from_file
 from matvirdkit.builder.task import VaspTask
 from matvirdkit.builder.mechanics import get_mechanics2d_info
-
 __version__ = "0.1.0"
 __author__ = "Matvird"
 
@@ -30,7 +34,6 @@ def function_name():
 
 supported_dataset = ['bms', 'mech2d', 'npr2d', 'penta',  'rashba'
                      'carbon2d', 'carbon3d', 'raman' ]
-links = ['thermo', 'emcs', 'bandgaps', 'mobilities', 'workfunctions', 'magnetism', 'xrd',  'dos', 'stiff_stability', 'phonon_stability', 'thermo_stability', 'customer', 'raman', 'polar']
 
 class Builder(metaclass=ABCMeta):
     def __init__(self, material_id : str, dataset :str , dimension = None, root_dir=None ):
@@ -38,18 +41,23 @@ class Builder(metaclass=ABCMeta):
         assert dataset in supported_dataset
         self.root_dir =  root_dir if root_dir else REPO_DIR
         self.work_dir =  os.path.join(self.root_dir,dataset,material_id)
+        self.mech_dir =  os.path.join(self.root_dir,dataset,material_id,'mechanics')
         if os.path.isdir(self.work_dir):
            pass
         else:
            create_path(self.work_dir,backup=False)
+        if os.path.isdir(self.mech_dir):
+           pass
+        else:
+           create_path(self.mech_dir,backup=False)
         self.dimension = dimension
 
         self._registered_doc=[]
         self._structure = None
-        self._thermo      = []  #thermo
-        self._electronicstructure  = []  #
+        self._thermo      = {}  #thermo
+        self._electronicstructure  = {}  #
+        self._mechanics2d  = {}
         self._mechanics    = []
-        self._mechanics2d  = []
         self._mechanics2d_origins = []
         
         self._stability    = []
@@ -57,16 +65,17 @@ class Builder(metaclass=ABCMeta):
         self._stiff_stability = []
         self._phonon_stability    = []
 
-        self._magnetism    = []
-        self._xrd          = []
-        self._raman        = []
-        self._polar        = []
+        self._magnetism    = {}
+        self._xrd          = {}
+        self._raman        = {}
+        self._polar        = {}
         self._sources      = []
         self._provenance   = []
         self._meta         = []
 
         self._customer     = {}
         self._origins      = {}
+        self._provenance   = {}
 
         self._tasks = []
         self._properties   = {}
@@ -117,7 +126,6 @@ class Builder(metaclass=ABCMeta):
     def update_properties(self, key : str, val : Dict):
         self._properties[key] = val
 
-
     def set_structure(self, fname='POSCAR') -> None:
         self._structure = structure_from_file(fname)
 
@@ -132,154 +140,150 @@ class Builder(metaclass=ABCMeta):
 
     def get_StructureDoc(self,**kwargs) -> Union[Dict , StructureMatvird]:
         return self._StructureDoc
-
-    def set_origins(self,key,task_id,name='',link=[]) -> None:
-        if  key in self._origins.keys():
-             self._origins[key].append(PropertyOrigin(name=name,task_id=task_id,link=link))
-        else:
-             self._origins[key]=[PropertyOrigin(name=name,task_id=task_id,link=link)]
-    def get_origins(self, key : Union[str,List]) -> List:
-        if isinstance(key,str):
-           if key in self._origins.keys():
-              return self._origins[key]
-           else:
-              return []
-        elif isinstance(key,list):
-             ret=[] 
-             for _key in key:
-                 if _key in self._origins.keys():
-                    ret.extend( self._origins[_key] )
-                 else:
-                    pass
-             return ret
-        else:
-            return []
  
-    def set_thermo(self,formation_energy_per_atom=None,
-                         energy_above_hull=None,
-                         energy_per_atom=None,
-                         **kwargs) -> None:
-        self._thermo.append( Thermo(formation_energy_per_atom=formation_energy_per_atom,
-                                     energy_above_hull=energy_above_hull,
-                                     energy_per_atom=energy_per_atom,**kwargs))
+    #--------- thermo -------------------
+    def set_thermo(self, infos) -> None:
+        func_name=function_name().split('_')[-1]
+        log.debug('Func name: set_%s()'%func_name) 
+        for label in infos.get(func_name,{}).keys():
+            info=infos[func_name].get(label,{})
+            prov=info.get('prov',{})
+            #description=info.get('description','')
+            #root_meta=info.get('meta',{})
+            provenance=self._get_provenance(prov)
+            thermo=Thermo(provenance=provenance,**info) 
+            self._thermo [label] = thermo
 
     def get_thermo(self) -> Dict:
          return self._thermo
-    
-    def set_ThermoDoc(self, created_at = None, **kwargs) -> None:
-        created_at = created_at if created_at else datetime.now()  
-        self._ThermoDoc=ThermoDoc(created_at = created_at ,
-                         thermo = self.get_thermo(),
-                         origins = self.get_origins('thermo'),
-                         material_id = self.material_id,
-                         **kwargs)
+
+    def set_ThermoDoc(self) -> None:
+        self._ThermoDoc=ThermoDoc(thermo=self.get_thermo())
         self.registery_doc(function_name().split('_')[-1])
 
-    def get_ThermoDoc(self) -> Union[Dict , ThermoDoc]:
-        return self._ThermoDoc
+    def get_ThermoDoc(self) -> Union[Dict,ThermoDoc]:
+        return self._ThermoDoc       
 
-    def set_emcs(self,value,k_loc,b_loc,**kwargs) -> None:
-        self._emcs.append( EMC(k_loc=k_loc,b_loc=b_loc,value=value,**kwargs))
+    def _get_mechanics2d_provenance(self,prov={}):
+        provenance={}
+        if prov:
 
-    def get_emcs(self) -> Dict:
-        log.info('Number of emcs: %d'%(len(self._emcs)))
-        return self._emcs
+    def _get_provenance(self,prov={}):
+        provenance={}
+        if prov:
+           for key in prov.keys():
+               task_infos=prov[key].get('task_infos',[])
+               meta=prov[key].get("meta",{})
+               log.debug(meta)
+               origins=[]
+               for task_info in task_infos:
+                   task_dir=task_info.get('task_dir','')
+                   code=task_info.get('code','vasp')
+                   description=task_info.get('description','')
+                   log.debug('task_dir :%s'%task_dir)
+                   if task_dir:
+                      task_id,calc_type = self.encode_task(task_dir,code=code)
+                      self.set_task( task_id = task_id, code= code, calc_type = str(calc_type) , description=description)
+                      log.info('task_id: %s calc_type: %s'%(task_id,calc_type))
+                      origins.append(Origin(name=str(calc_type),
+                                            task_id = str(task_id)))
+                   else:
+                      pass
+               provenance[key]=LocalProvenance(origins=origins,**meta)
+        else:
+            pass
+        return provenance
+
+    #---------electronic structure-------------------
+    def set_electronic(self, infos) -> None:
+        func_name=function_name().split('_')[-1]
+        log.debug('Func name: set_%s()'%func_name) 
+        for label in infos.get(func_name,{}).keys():
+            info=infos[func_name].get(label,{})
+            bandgap=Bandgap(**info.get('bandgap',{}))
+            emc=EMC(**info.get('emc',{}))
+            mobility=Mobility(**info.get('mobility',{}))
+            workfunction=Workfunction(**info.get('workfunction',{}))
+            band=DataFigure(**info.get('band',{}))
+            dos=DataFigure(**info.get('dos',{}))
+            description=info.get('description','')
+            root_meta=info.get('meta',{})
+            prov=info.get('prov',{})
+            provenance=self._get_provenance(prov)
+            self._electronicstructure  [label] = ElectronicStructure(provenance=provenance,
+                                      bandgap=bandgap,
+                                      emc=emc,
+                                      mobility=mobility,
+                                      workfunction=workfunction,
+                                      band=band,
+                                      dos=dos,
+                                      description=description,
+                                      meta=root_meta) 
+    def get_electronic(self):
+        return self._electronicstructure
     
-    def set_bandgaps(self,value,direct,**kwargs) -> None:
-        self._bandgaps.append(Bandgap(value=value,direct=direct,**kwargs))
-
-    def get_bandgaps(self) -> Dict:
-        log.info('Number of bandgaps: %d'%(len(self._bandgaps)))
-        return self._bandgaps
-
-    def set_bandgaps(self,value,direct,**kwargs) -> None:
-        self._bandgaps.append(Bandgap(value=value,direct=direct,**kwargs))
-        
-    def set_mobilities(self,value,k_loc,b_loc,direction,**kwargs) -> None:
-        self._mobilities.append(Mobility(k_loc=k_loc,b_loc=b_loc,value=value,direction=direction,**kwargs))
- 
-    def get_mobilites(self) -> Dict:
-        log.info('Number of mobilites: %d'%(len(self._mobilites)))
-        return self._mobilites
-
-    def set_workfunctions(self,value,**kwargs) -> None:
-        self._workfunctions.append(Workfunction(value=value,**karg))
-
-    def get_workfunctions(self) -> Dict:
-        log.info('Number of workfunctions: %d'%(len(self._mobilites)))
-        return self._workfunctions
-
-    def set_ElectronicStructureDoc(self,  created_at, **kwargs) -> None: 
-        created_at = created_at if created_at else datetime.now()
-        self._ElectronicStructureDoc=ElectronicStructureDoc(created_at = created_at ,
-                         material_id = self.material_id,
-                         origins  = self.get_origins(['eletronicstructure',
-                                                      'emcs',
-                                                      
-                                                      ]),
-                         bandgaps = self.get_bandgaps(),
-                         emcs     = self.get_emcs(),
-                         mobilities  = self.get_mobilities(),
-                         workfunctions  = self.get_workfunctions(),
-                         doses    = self.get_doses(),
-                         bandstructures = self.get_bandstructures(),
-                         **kwargs)
+    def set_ElectronicDoc(self) -> None: 
+        self._ElectronicStructureDoc=ElectronicStructureDoc(
+               electronicstructure=self.get_electronic()
+               )
         self.registery_doc(function_name().split('_')[-1])
                            
-    def get_ElectronicStructureDoc(self) -> Union[Dict ,ElectronicStructureDoc]:
+    def get_ElectronicDoc(self) -> Union[Dict ,ElectronicStructureDoc]:
         return self._ElectronicStructureDoc
 
-    def set_mechanics2d_info(self,task_dir,prop_dir='mechanics',lprops=None , code= 'vasp'):
-       # info --- origin
-        _mechanics2d_info = get_mechanics2d_info(task_dir, 
-                                        prop_dir=os.path.join(self.work_dir,prop_dir),
-                                        lprops = lprops,
-                                        code = code)
-
-        self._mechanics2d_info.append( _mechanics2d_info)
-        # Mechanics2d(**_mechanics2d_info[0]) )
-   
-    def get_mechanics2d_info(self): 
-        return self._mechanics2d_info
+    #-------------mechanics------------------------
+    def set_mechanics2d(self, infos) -> None:
+        func_name=function_name().split('_')[-1]
+        log.debug('Func name: set_%s()'%func_name) 
+        for label in infos.get(func_name,{}).keys():
+            info=infos[func_name].get(label,{})
+            elc2nd_stress=info.get('elc2nd_stress',{}).get('task_dir','')
+            elc2nd_energy=info.get('elc2nd_stress',{}).get('task_dir','')
+            stress_strain=info.get('stress_strain',{}).get('task_dir','')
+            description=info.get('description','')
+            root_meta=info.get('meta',{})
+            prov=info.get('prov',{})
+            provenance=self._get_mechanics2d_provenance(prov)
+            self._mechanics2d  [label] = Mechanics2d(provenance=provenance,
+                                      elc2nd_stress=elc2nd_stress,
+                                      elc2nd_energy=elc2nd_energy,
+                                      description=description,
+                                      meta=root_meta) 
+    def get_mechanics(self):
+        return self._mechanics2d
                                         
-    def set_Mechanics2dDoc(self, created_at = None, **kwargs) -> None:
-        created_at = created_at if created_at else datetime.now()
-        self._Mechanics2dDoc=Mechanics2dDoc(created_at = created_at ,
-                         material_id = self.material_id,
-                         mechanics2d = self.get_mechanics2d(),
-                         origins = self.get_mechanics2d_origins(),
-                         **kwargs)
+    def set_Mechanics2dDoc(self) -> None:
+        self._Mechanics2dDoc=Mechanics2dDoc(
+                         mechanics2d = self.get_mechanics2d()
+                         )
         self.registery_doc(function_name().split('_')[-1])
     
     def get_Mechanics2dDoc(self):
         return self._Mechanics2dDoc
 
-    def set_magnetism(self,magneatic_moment = None, magnetic_order = None,
-                           exchange_energy = None, magnetic_anisotropy= {},
-                           **kwargs) -> None:
-        self._magnetism.append(Magnetism(magneatic_moment = magneatic_moment ,
-                                         magnetic_order = magnetic_order ,
-                                         exchange_energy = exchange_energy ,
-                                         magnetic_anisotropy = magnetic_anisotropy,
-                                         **kwargs))
+    #-----------------magnetism--------------------
+    def set_magnetism(self, infos) -> None:
+        func_name=function_name().split('_')[-1]
+        log.debug('Func name: set_%s()'%func_name) 
+        for label in infos.get(func_name,{}).keys():
+            info=infos[func_name].get(label,{})
+            prov=info.get('prov',{})
+            provenance=self._get_provenance(prov)
+            self._magnetism [label] = Magnetism(provenance=provenance,**info) 
 
-    def get_magnetism(self) -> List:
+    def get_magnetism(self) -> Dict:
         return self._magnetism
 
-    def set_MagnetismDoc(self,  created_at = None, **kwargs) -> None:
-        created_at = created_at if created_at else datetime.now()
-        self._MagnetismDoc=MagnetismDoc(created_at = created_at ,
-                         material_id = self.material_id,
-                         magnetism = self.get_magnetism(),
-                         origins  = self.get_origins('magnetism'),
-                         **kwargs)
+    def set_MagnetismDoc(self, ) -> None:
+        self._MagnetismDoc=MagnetismDoc(magnetism=self.get_magnetism())
         self.registery_doc(function_name().split('_')[-1])
 
     def get_MagnetismDoc(self) -> Union[Dict ,MagnetismDoc]:
         return self._MagnetismDoc
  
     def set_xrd(self, target='Cu', edge='Ka', min_two_theta=0, max_two_theta = 180,**kwargs) -> None:
-        self._xrd.append(XRD.from_target(
+        label=target+'_'+edge
+        self._xrd[label]=XRD.from_target(
                          material_id= self.material_id,
                          structure = self.get_structure(),
                          target = target,
@@ -287,17 +291,17 @@ class Builder(metaclass=ABCMeta):
                          min_two_theta = min_two_theta,
                          max_two_theta = max_two_theta,
                          **kwargs
-                       ))  
+                       )  
 
-    def get_xrd(self) -> List:
+    def get_xrd(self) -> Dict:
         return self._xrd
 
     def set_XRDDoc(self,  created_at = None, **kwargs) -> None:
         created_at = created_at if created_at else datetime.now()
-        self._XRDDoc= XRDDoc(created_at = created_at ,
-                         material_id = self.material_id,
+        self._XRDDoc= XRDDoc(
+                         #material_id = self.material_id,
                          xrd = self.get_xrd(),
-                         origins  = self.get_origins('xrd'),
+                         provenance  = self.get_provenance('xrd'),
                          **kwargs)
         self.registery_doc(function_name().split('_')[-1])
 
@@ -531,50 +535,70 @@ class Builder(metaclass=ABCMeta):
 if __name__ == '__main__':
    from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import test_path
+   infos=loadfn('info.json') or loadfn('info.yaml')
    task_dir=os.path.join(test_path(),'relax')
-   mech_dir=os.path.join(test_path(),'alpha-P-R')
+   opt_dir=os.path.join(test_path(),'relax')
+   mech_dir1=os.path.join(test_path(),'alpha-P-R')
+   mech_dir2=os.path.join(test_path(),'GeSe-RC')
    scf_dir=os.path.join(test_path(),'scf')
    builder=Builder(material_id = 'bms-1', dataset = 'bms')
    #------structure
    builder.set_structure(fname=os.path.join(task_dir,'CONTCAR'))
    builder.set_StructureDoc()
-   #------tasks
-#                         origins = self.get_origins('thermo'),
-#                         origins  = self.get_origins('eletronicstructure'),
-#                         origins  = self.get_origins('magnetism'),
-#                         origins  = self.get_origins('xrd'),
-#                         origins  = self.get_origins('stability'),
-   task_id,calc_type = builder.encode_task(task_dir,code='vasp')
-   print('task_id : %s  calc_type: %s'%(task_id,calc_type))
-   builder.set_task( task_id = task_id, code= 'vasp', calc_type = str(calc_type) , description='This is a relax task')
-   builder.set_origins(key='thermo', task_id=task_id, name=str(calc_type)) 
-   task_id,calc_type = builder.encode_task(scf_dir,code='vasp')
-   print('task_id : %s  calc_type: %s'%(task_id,calc_type))
-   builder.set_task( task_id = task_id, code= 'vasp', calc_type = str(calc_type) , description='This is a scf task')
-   builder.set_origins(key='elctronicstructure', task_id=task_id, name=str(calc_type)) 
-   builder.set_TaskDoc()
+   #print(self.get_local_provenance(doc_type,provenance_key,created_at=))
+   #print('task_id : %s  calc_type: %s'%(task_id,calc_type))
+   for key in infos.keys():
+       print('--------set %s-------'%key)
+       func_set = getattr(builder, 'set_'+key)
+       Func_set = getattr(builder, 'set_'+key.capitalize()+'Doc' )
+       func_set(infos)
+       Func_set()
+       Func_get = getattr(builder, 'get_'+key.capitalize()+'Doc' )
+       d=Func_get()
+       #pprint(d.dict())
+       #dumpfn(jsanitize(d),'thermo.json',indent=4)
+
+   #builder.set_thermo( label='GGA-PBE',formation_energy_per_atom=-0.1,
+   #                      energy_above_hull=0.01,
+   #                      energy_per_atom=-3.2)
+   #builder.set_ThermoDoc()
+   
+   print('*'*40) 
+   print(builder.get_provenance())
+   print('-'*40) 
+   print(builder.get_task())
+   #builder.set_task( task_id = task_id, code= 'vasp', calc_type = str(calc_type) , description='This is a relax task')
+   #builder.set_origins(doc_type='thermo', origin_key ='thermo-1',  task_id=task_id, name=str(calc_type)) 
+   #builder.set_origins(doc_type='thermo', origin_key ='thermo-2',  task_id=task_id, name=str(calc_type)) 
+   #task_id,calc_type = builder.encode_task(scf_dir,code='vasp')
+   #print('task_id : %s  calc_type: %s'%(task_id,calc_type))
+   #builder.set_task( task_id = task_id, code= 'vasp', calc_type = str(calc_type) , description='This is a scf task')
+   #builder.set_origins(doc_type='elctronicstructure', origin_key= 'PBE-SCF',  task_id=task_id, name=str(calc_type)) 
+   #builder.set_TaskDoc()
    #------thermo
-   builder.set_thermo(formation_energy_per_atom=-0.1,
-                         energy_above_hull=0.01,
-                         energy_per_atom=-3.2)
-   builder.set_ThermoDoc()
    #------magnetism
-   builder.set_magnetism(magneatic_moment = 3.0, magnetic_order = 'FiM',
-                         exchange_energy = None, magnetic_anisotropy= {})
-   builder.set_MagnetismDoc()
+   #builder.set_magnetism(magneatic_moment = 3.0, magnetic_order = 'FiM',
+   #                      exchange_energy = None, magnetic_anisotropy= {},
+   #                     label='Magnetism-HSE',description='Magnetic properties obtained from HSE level theory')
+   #builder.set_magnetism(magneatic_moment = 3.0, magnetic_order = 'FiM',
+   #                      exchange_energy = None, magnetic_anisotropy= {},
+   #                     label='Magnetism-GW',description='Magnetic properties obtained from GW level theory')
+   #builder.set_MagnetismDoc()
    #------mechanics
-   builder.set_mechanics2d(task_dir=mech_dir,prop_dir='mechanics',lprops=None , code= 'vasp')
-   builder.set_Mechanics2dDoc()
+   # this is only a test, generally, we will set mechanical properties based on diffrent functional or different code
+   #builder.set_mechanics2d(task_dir=mech_dir1,prop_dir='mechanics',lprops=None , code= 'vasp', label ='alpha-P')
+   #builder.set_mechanics2d(task_dir=mech_dir2,prop_dir='mechanics',lprops=None , code= 'vasp', label ='GeSe-RC')
+   #builder.set_Mechanics2dDoc()
    #------stability
-   builder.set_stiff_stability(value='low')
-   builder.set_phonon_stability(value='high')
+   #builder.set_stiff_stability(value='low')
+   #builder.set_phonon_stability(value='high')
    #builder.set_thermo_stability(value='middle')
-   builder.set_StabilityDoc()
+   #builder.set_StabilityDoc()
    #------XRD
    builder.set_xrd()
    builder.set_XRDDoc()
    #------source
-   builder.set_sources(db_name='c2db', material_id='As4Ca4-bf7bbbdbefe0', material_url='https://cmrdb.fysik.dtu.dk/c2db/row/As4Ca4-bf7bbbdbefe0')
+   #builder.set_sources(db_name='c2db', material_id='As4Ca4-bf7bbbdbefe0', material_url='https://cmrdb.fysik.dtu.dk/c2db/row/As4Ca4-bf7bbbdbefe0')
    builder.set_sources(db_name='icsd', material_id='22388')
    builder.set_SourceDoc()
    #------meta
