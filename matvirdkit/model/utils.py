@@ -20,6 +20,7 @@ from typing_extensions import Literal
 
 from matvirdkit.model.settings import SYMPREC,LTOL,STOL,ANGLE_TOL
 
+Len = 40
 Vector3D = Tuple[float, float, float]
 Vector3D.__doc__ = "Real space vector"  # type: ignore
 
@@ -262,6 +263,19 @@ def transfer_file(fname, src_path, dst_path, rename = True, path_type = 'base', 
           shutil.copyfile(src=fname, dst=dst_fname)
        except SameFileError:
           pass
+
+def sepline(ch='-',sp='-'):
+    r'''
+    seperate the output by '-'
+    '''
+    print(ch.center(Len,sp))
+
+def box_center(ch='',fill=' ',sp="|"):
+    r'''
+    put the string at the center of |  |
+    '''
+    strs=ch.center(Len,fill)
+    print(sp+strs[1:len(strs)-1:]+sp)
 
 
 def test_path(f='.'):

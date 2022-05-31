@@ -6,8 +6,7 @@ from .polar import Dielectric, Piezoelectric
 from .provenance import LocalProvenance,GlobalProvenance,Origin 
 from .stability import StabilityLevel, ThermoDynamicStability, PhononStability, StiffnessStability, StabilityDoc
 from .spectrum import SpectrumDoc
-from .structure import (Lattice, Specie, SiteSpecie, SiteElement, Site, PeriodicSite,
-                        StructureMP, StructureMetadata, Dimension, StructureMatvird)
+from .structure import ( StructureMP, StructureMetadata, StructureMatvird)
 from .symmetry import CrystalSystem, SymmetryData
 from .utils import ValueEnum, DocEnum, YesOrNo
 from .xrd import Edge, XrdDoc

@@ -168,9 +168,9 @@ if __name__=='__main__':
    td=ThermoDoc(
       thermo={
               'pbe-static':      Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3),
-              'pbe-static-d2' :  Thermo(energy_above_hull=0.1, uncorrected_energy_per_atom=-2.4)
-               } ,
-      provenance={'pbe-static-d2': provenance0, 'pbe-vdw': provenance1}
+              'pbe-static-d2' :  Thermo(energy_above_hull=0.1, uncorrected_energy_per_atom=-2.4,
+      provenance={'energy_above_hull': provenance0, 'formation_energy': provenance1})
+               } 
       )
    dumpfn(jsanitize(td),'thermo.json',indent=4)
 #rovenance: LocalProvenance = Field(None, description="Property provenance")

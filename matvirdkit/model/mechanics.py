@@ -139,23 +139,23 @@ if __name__=='__main__':
    
 
    summary= Mechanics2dSummary.from_file(fname=os.path.join(task_dir,'Result.json'))
-   _elc2nd2d = Elc2nd2d(**{ 
-         'summary':  summary,
-         'polar_EV':  DataFigure(data=[data],figure=fig),
-         'deformations': {'Def_1':DataFigure(data=[data_def],figure=fig_def)}
-        })
-   _mechanics2d_energy = Mechanics2d(elc2nd_energy = _elc2nd2d)
-   _mechanics2d_stress = Mechanics2d(elc2nd_stress = _elc2nd2d)
    origins=[
             Origin(name='static',task_id='task-110'),
             Origin(name='static',task_id='task-111'),
             Origin(name='static',task_id='task-112')
            ]
-   provenance=LocalProvenance(origins=origins,
-                              created_at=datetime.now())
+   provenance={"elc2nd_energy":LocalProvenance(origins=origins,
+                              created_at=datetime.now())}
+   _elc2nd2d = Elc2nd2d(**{ 
+         'summary':  summary,
+         'polar_EV':  DataFigure(data=[data],figure=fig),
+         'deformations': {'Def_1':DataFigure(data=[data_def],figure=fig_def)}
+        })
+   _mechanics2d = Mechanics2d(elc2nd_energy = _elc2nd2d,
+                                    elc2nd_stress = _elc2nd2d,
+                                     provenance=provenance)
    pd=Mechanics2dDoc(
-      mechanics2d= {'PBE':_mechanics2d_energy, 'HSE': _mechanics2d_stress},
-      provenance={'PBE':provenance}
+      mechanics2d= {'PBE':_mechanics2d},
       )
    dumpfn(jsanitize(pd),'mech.json',indent=4)
    print(jsanitize(pd.dict()))

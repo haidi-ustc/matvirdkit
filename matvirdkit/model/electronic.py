@@ -65,7 +65,11 @@ if __name__=='__main__':
    es={
        'pbe': ElectronicStructure(bandgap=Bandgap(value=1.1,direct=True,description='HSE-low-kp'),
                emc= EMC(k_loc='Gamma',b_loc='VB',value=0.3,description='PBE'),
-               mobility= Mobility(k_loc='Gamma',b_loc='VB',value=0.3,description='PBE',direction='x')
+               mobility= Mobility(k_loc='Gamma',b_loc='VB',value=0.3,description='PBE',direction='x'),
+   provenance={"emc":LocalProvenance( 
+      warnings = ['low encut'],
+      tags = ['experimental phase'],
+      database_IDs={'icsd':['11023'],'mp':['mp-771246']}) }
                ),
        'hse': ElectronicStructure(bandgap=Bandgap(value=1.2,direct=True,description='HSE-low-kp'),
                emc= EMC(k_loc='Gamma',b_loc='VB',value=0.4,description='PBE'),
@@ -73,14 +77,9 @@ if __name__=='__main__':
                dos=DataFigure(data= [data_hse], figure=data_hse)
                )
        }
-   provenance={'pbe':LocalProvenance( 
-      warnings = ['low encut'],
-      tags = ['experimental phase'],
-      database_IDs={'icsd':['11023'],'mp':['mp-771246']})}
 
    pd=ElectronicStructureDoc(
-         electronicstructure= es,
-         provenance= provenance
+         electronicstructure= es
      )
    print(pd.json())
    dumpfn(pd.dict(),'electronic.json',indent=4)

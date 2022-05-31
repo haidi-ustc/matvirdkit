@@ -101,6 +101,7 @@ class StiffnessStability(MatvirdBase):
 
 
 class Stability(BaseModel):
+    provenance: Dict[str,LocalProvenance] = Field({}, description="Property provenance")
     stiff_stability: StiffnessStability  = Field(StiffnessStability(), description='stiff stability information')
     thermo_stability: ThermoDynamicStability  = Field(ThermoDynamicStability(), description='thermo stability information')
     phonon_stability: PhononStability  = Field(PhononStability(), description='phon stability information')
@@ -111,7 +112,6 @@ class StabilityDoc(BaseModel):
     """
     property_name: ClassVar[str] = "stability"
     stability: Dict[str,Stability] = Field({}, description='2d Mechanics information')
-    provenance: Dict[str,LocalProvenance] = Field({}, description="Property provenance")
 
 if __name__=='__main__': 
    from monty.serialization import loadfn,dumpfn
@@ -124,11 +124,11 @@ if __name__=='__main__':
                               tags = ['high temperature phase'])
    stability = Stability(
            stiff_stability =  StiffnessStability.from_key(min_eig_tensor=0.1) ,
-           thermo_stability=  ThermoDynamicStability.from_key (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static') 
+           thermo_stability=  ThermoDynamicStability.from_key (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static') ,
+      provenance = {"stiff_stability": provenance} 
                )
    pd=StabilityDoc(
-      stability  = {"PBE": stability },
-      provenance = {"PBE": provenance} 
+      stability  = {"PBE": stability }
       )
    print(pd.json())
    dumpfn(jsanitize(pd),'stab.json',indent=4)

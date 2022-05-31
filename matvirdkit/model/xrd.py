@@ -148,9 +148,9 @@ if __name__ == '__main__':
                               target= 'Cu',
                               edge= "Ka", 
                               min_two_theta=0,
+                              provenance=provenance,
                               max_two_theta=180)  
           },
-         provenance=provenance
       )
 
    #print(xrddoc.json())
