@@ -268,9 +268,9 @@ def test_path(f='.'):
     #fpath=os.path.abspath(__file__) 
     fpath=os.getcwd()
     if f=='.' or f== './':
-       return os.path.abspath(os.path.join(fpath,'../../tests'))
+       return os.path.abspath(os.path.join(fpath,'../../tests_files'))
     elif f=='..' or f=='../':
-       return os.path.abspath(os.path.join(fpath,'../../../tests'))
+       return os.path.abspath(os.path.join(fpath,'../../../tests_files'))
 
 if __name__ == '__main__':
    print(test_path())

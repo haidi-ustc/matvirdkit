@@ -43,11 +43,11 @@ class VaspOutputs(object):
         ):
  
         foutputs = foutputs if foutputs else ["CONTCAR", "OSZICAR", "OUTCAR", "vasprun.xml"] 
-        print(foutputs)
+        #print(foutputs)
         if 'VASPRUN' in foutputs:
             foutputs[foutputs.index('VASPRUN')]='vasprun.xml'
-        print('---------')
-        print(foutputs)
+        #print('---------')
+        #print(foutputs)
         self.rootpath = os.getcwd()
         self.foutputs = [ii+'.'+sufix for ii in foutputs ] if sufix else foutputs
         self.work_path = os.path.abspath(work_path)
@@ -69,7 +69,7 @@ class VaspOutputs(object):
                 data = self.get_contcar(fname,relax=self.relax)
             elif "OSZICAR" in foutput:
                 data = self.get_oszicar(fname)
-                print('OSZICAR: ',data)
+                #print('OSZICAR: ',data)
             elif "CHGCAR" in foutput:
                 data = self.get_chgcar(fname)
             elif "ELFCAR" in foutput:
@@ -93,7 +93,7 @@ class VaspOutputs(object):
                #print(cfname)
             else:
                cfname = ''
-            print(foutput, ' : raw-->', cfname)
+            #print(foutput, ' : raw-->', cfname)
 
             if data:
                json_file_name=sha1(str(data).encode('utf-8')).hexdigest()
@@ -101,10 +101,10 @@ class VaspOutputs(object):
                dumpfn(data,json_file_name,indent=4)
             else:
                json_file_name = ''
-            print(foutput, ' : jsanitize-->', json_file_name)
+            #print(foutput, ' : jsanitize-->', json_file_name)
             jfd=JFData(file_fmt='.gz',file_id=None, file_name=cfname,
                    json_id=None, json_file_name=os.path.basename(json_file_name),json_data={})
-            pprint(jfd.dict())
+            #pprint(jfd.dict())
             doutput[foutput]=jfd
         _doutput=copy.deepcopy(doutput)      
         if 'vasprun.xml' in _doutput.keys():

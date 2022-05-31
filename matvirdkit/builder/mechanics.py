@@ -6,13 +6,13 @@ from glob import glob
 from monty.serialization import loadfn,dumpfn
 from matvirdkit.model.utils import jsanitize
 from matvirdkit import log
-from matvirdkit.model.mechanics import Mechanics2d, Mechanics2dDoc,Mechanics2dSummary,Elc2nd2d
+from matvirdkit.model.mechanics import Mechanics2d, Mechanics2dDoc,Mechanics2dSummary,Elc2nd2d,StressStrain
 from matvirdkit.model.common import DataFigure,JFData
 from matvirdkit.model.utils import create_path,transfer_file,jsanitize
 from matvirdkit import REPO_DIR as repo_dir
 from matvirdkit.builder.task import VaspTask
 
-def mechanics2d_from_directory(task_dir,dst_dir,prop, root_meta={}, code= 'vasp'):
+def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
 
     ret={'summary':{},
          'polar_EV':{},
@@ -20,6 +20,8 @@ def mechanics2d_from_directory(task_dir,dst_dir,prop, root_meta={}, code= 'vasp'
          'stress_strain':{},
          'meta':{}
          }
+    if not task_dir:
+       return ret
 
     pwd=os.getcwd()
     assert prop in ['elc_energy','elc_stress','ssc_stress']
@@ -142,8 +144,6 @@ def mechanics2d_from_directory(task_dir,dst_dir,prop, root_meta={}, code= 'vasp'
              file_fmt='png', file_name=os.path.join(dst_dir,prop,ssc,ssc+'_Lagrangian_Stress.png'),file_id=None)
            data_fig=DataFigure(data=[data],figure=fig)
            ret['stress_strain'][ssc]=data_fig
-       
-            
     else:
        raise RuntimeError('Unknow combination of approach and property : %s '%(prop))
 
@@ -163,9 +163,13 @@ if __name__== '__main__':
    create_path(dst_dir)
    ret1=mechanics2d_from_directory(task_dir,dst_dir,prop='elc_energy', code= 'vasp')
    print(ret1.keys())
+   print(ret1['meta'])
+   #print(ret1['meta'])
    ret2=mechanics2d_from_directory(task_dir,dst_dir,prop='elc_stress', code= 'vasp')
    ret3=mechanics2d_from_directory(task_dir,dst_dir,prop='ssc_stress', code= 'vasp')
-   print(ret3['stress_strain'])
-   ret=Mechanics2d(elc2nd_stress=Elc2nd2d(**ret2),elc2nd_energy=Elc2nd2d(**ret1),stress_strain=ret3['stress_strain'])
+   #print(ret3['stress_strain'])
+   root_meta={}
+   ret=Mechanics2d(elc2nd_stress=Elc2nd2d(**ret2),elc2nd_energy=Elc2nd2d(**ret1),stress_strain=StressStrain(**ret3),**root_meta)
    dumpfn(jsanitize(ret),'ret.json')
+   dumpfn(jsanitize(Elc2nd2d(**ret1)),'r1.json')
  

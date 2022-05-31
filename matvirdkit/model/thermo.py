@@ -9,7 +9,7 @@ from pymatgen.core import Composition
 from pymatgen.core.periodic_table import Element
 from pymatgen.entries.computed_entries import ComputedEntry, ComputedStructureEntry
 
-from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
+from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin 
 from matvirdkit.model.structure import StructureMetadata
 from matvirdkit.model.common import MatvirdBase
 
@@ -35,8 +35,7 @@ class Thermo(MatvirdBase):
     """
     A thermo entry document
     """
-    description : Optional[str] = Field(None, description= 'Thermo information')
-
+    provenance: Dict[str,LocalProvenance] = Field({}, description="Property provenance")
     uncorrected_energy_per_atom: float = Field(
         None, description="The total DFT energy of this material per atom in eV/atom"
     )
@@ -140,27 +139,38 @@ class Thermo(MatvirdBase):
 
     #    return docs
 
-class ThermoDoc(PropertyDoc):
+class ThermoDoc(BaseModel):
       """
       A thermo  property block
       """
       property_name: ClassVar[str] = Field(
         "thermo", description="The subfield name for this property"
          )
-      thermo: List[Thermo]=Field(None, description='Thermo list')
+      thermo: Dict[str,Thermo]=Field({}, description='Thermo list')
 
 if __name__=='__main__':
    from uuid import uuid4
    from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import jsanitize,ValueEnum
-   pd=ThermoDoc(created_at=datetime.now(),
-      thermo=[
-                Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3,description='pbe-static'),
-                Thermo(energy_above_hull=0.1, uncorrected_energy_per_atom=-2.4,description='pbe-static-d2')
-               ],
-      origins=[PropertyOrigin(name='static',task_id='task-112')],
-      material_id='rsb-1',
-      tags = ['high temperature phase']
+   origins0=[
+            Origin(name='pbe-static',task_id='task-112'),
+            Origin(name='pbe-static-d2',task_id='task-112'),
+            ]
+   origins1=[
+            Origin(name='pbe-static',task_id='task-112'),
+            Origin(name='pbe-static-d2',task_id='task-112'),
+            ]
+   provenance0=LocalProvenance(origins=origins0,
+                              created_at=datetime.now(),
+                              authors=[{'name':'haidi','email':'haidi@hfut.edu.cn'},{'name':'zhangsan','email':'zhangsan@ustc.edu.cn'}]
+                   )
+   provenance1=LocalProvenance(origins=origins1)
+   td=ThermoDoc(
+      thermo={
+              'pbe-static':      Thermo(formation_energy_per_atom=-0.1, uncorrected_energy_per_atom=-2.3),
+              'pbe-static-d2' :  Thermo(energy_above_hull=0.1, uncorrected_energy_per_atom=-2.4)
+               } ,
+      provenance={'pbe-static-d2': provenance0, 'pbe-vdw': provenance1}
       )
-   print(pd.dict())
-   dumpfn(jsanitize(pd),'thermo.json',indent=4)
+   dumpfn(jsanitize(td),'thermo.json',indent=4)
+#rovenance: LocalProvenance = Field(None, description="Property provenance")

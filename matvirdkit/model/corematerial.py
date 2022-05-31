@@ -9,11 +9,11 @@ from pydantic import BaseModel, Field, create_model
 from pymatgen.analysis.magnetism import CollinearMagneticStructureAnalyzer, Ordering
 from pymatgen.core import Structure as STRUCTURE
 
-#from matvirdkit.model.structure import StructureMetadata,StructureMatvird
+
 from matvirdkit.model.structure import StructureMP
+from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin
 
 T = TypeVar("T", bound="CoreMaterialsDoc")
-
 
 class CoreMaterialsDoc(BaseModel):
     """
@@ -64,7 +64,7 @@ class CoreMaterialsDoc(BaseModel):
         default_factory=datetime.utcnow,
     )
 
-    origins: Sequence[PropertyOrigin] = Field(
+    origins: Sequence[Origin] = Field(
         None, description="Dictionary for tracking the provenance of properties"
     )
 

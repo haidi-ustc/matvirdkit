@@ -4,7 +4,7 @@ from monty.serialization import loadfn,dumpfn
 from typing import Dict, List, Optional, Tuple, Union,Any, ClassVar
 
 import numpy as np
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, root_validator, ValidationError, validator
 from pymatgen.analysis.diffraction.xrd import (
     WAVELENGTHS,
     DiffractionPattern,
@@ -13,10 +13,9 @@ from pymatgen.analysis.diffraction.xrd import (
 from pymatgen.core import Structure
 from pymatgen.core.periodic_table import Element
 
-from matvirdkit.model.spectrum import SpectrumDoc
-from matvirdkit.model.utils import ValueEnum, jsanitize
-from matvirdkit.model.properties import PropertyDoc
 from matvirdkit.model.common import MatvirdBase
+from matvirdkit.model.utils import ValueEnum, jsanitize
+from matvirdkit.model.provenance import LocalProvenance,Origin
 
 class Edge(ValueEnum):
     K_Alpha = "Ka"
@@ -26,7 +25,8 @@ class Edge(ValueEnum):
     K_Beta1 = "Kb1"
     K_Beta2 = "Kb2"
 
-class XRD(MatvirdBase):
+class Xrd(MatvirdBase):
+    provenance: Dict[str,LocalProvenance] = Field({}, description="Property provenance")
     spectrum_id: str = Field(
         ...,
         title="Spectrum Document ID",
@@ -43,7 +43,7 @@ class XRD(MatvirdBase):
     edge: Edge = Field(None, description="Atomic edge for the diffraction source")
     @root_validator(pre=True)
     def get_target_and_edge(cls, values: Dict):
-        print("Validations")
+        #print("Validations")
         # Only do this if neither target not edge is defined
         if "target" not in values and "edge" not in values:
             print("Are we even getting here?")
@@ -72,7 +72,7 @@ class XRD(MatvirdBase):
         max_two_theta: float=180,
         symprec : float =0.1,
         **kwargs,
-    ) -> "XRDDoc":
+    ) -> "XrdDoc":
         calc = XRDCalculator(wavelength=wavelength, symprec=symprec)
         pattern = calc.get_pattern(
             structure, two_theta_range=(min_two_theta, max_two_theta)
@@ -107,7 +107,7 @@ class XRD(MatvirdBase):
         max_two_theta=180,
         symprec=0.1,
         **kwargs,
-    ) -> "XRDDoc":
+    ) -> "XrdDoc":
         if f"{target}{edge}" not in WAVELENGTHS:
             raise ValueError(f"{target}{edge} not in pymatgen wavelenghts dictionarty")
 
@@ -126,12 +126,12 @@ class XRD(MatvirdBase):
             **kwargs,
         )
      
-class XRDDoc(PropertyDoc):
+class XrdDoc(BaseModel):
     """
     Document describing a XRD Diffraction Pattern
     """
     property_name: ClassVar[str] = "spectrum"
-    xrd: List[XRD] = Field([], description='XRD List')
+    xrd: Dict[str,Xrd] = Field({}, description='Xrd List')
 
 
 if __name__ == '__main__':
@@ -140,21 +140,20 @@ if __name__ == '__main__':
    from matvirdkit.model.utils import test_path
    from monty.serialization import loadfn,dumpfn
    st=Structure.from_file(os.path.join(test_path(),'relax/CONTCAR'))
-   xrddoc=XRDDoc(
-         created_at=datetime.now(),
-         xrd= [XRD.from_target( 
-          #                    created_at=datetime.now()   ,
+   provenance= {'standard':LocalProvenance(tags=['abc'])}
+   xrddoc=XrdDoc( 
+         xrd = {'stanard': Xrd.from_target( 
                               material_id='bms-1',
                               structure=st,
                               target= 'Cu',
                               edge= "Ka", 
                               min_two_theta=0,
                               max_two_theta=180)  
-          ],
-       material_id='bms-1',
+          },
+         provenance=provenance
       )
 
-   print(xrddoc.json())
+   #print(xrddoc.json())
    from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import jsanitize,ValueEnum
    dumpfn(jsanitize(xrddoc),'xrd.json',indent=4)

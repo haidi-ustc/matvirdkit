@@ -3,17 +3,17 @@ from datetime import datetime
 from typing import ClassVar, Dict, List, Optional, Union, Tuple, TypeVar, Type
 from pydantic import BaseModel, Field, validator
 from matvirdkit.model.utils import jsanitize,ValueEnum
-from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
+from matvirdkit.model.provenance import LocalProvenance,Origin
 from matvirdkit.model.common import MatvirdBase
+
+T = TypeVar("T", bound="ThermoDynamicStability")
+P = TypeVar("P", bound="PhononStability")
+S = TypeVar("S", bound="StiffnessStability")
 
 class StabilityLevel(ValueEnum):
       low='low'
       middle='middle'
       high='high'
-
-T = TypeVar("T", bound="ThermoDynamicStability")
-P = TypeVar("P", bound="PhononStability")
-S = TypeVar("S", bound="StiffnessStability")
 
 class ThermoDynamicStability(MatvirdBase):
       value: StabilityLevel = Field(None, description='stability from thermodynamic')
@@ -100,28 +100,35 @@ class StiffnessStability(MatvirdBase):
           return cls(**{k: v for k, v in data.items() if k in fields}, **kwargs)
 
 
-class StabilityDoc(PropertyDoc):
+class Stability(BaseModel):
+    stiff_stability: StiffnessStability  = Field(StiffnessStability(), description='stiff stability information')
+    thermo_stability: ThermoDynamicStability  = Field(ThermoDynamicStability(), description='thermo stability information')
+    phonon_stability: PhononStability  = Field(PhononStability(), description='phon stability information')
+      
+class StabilityDoc(BaseModel):
     """
     Stability  property block
     """
     property_name: ClassVar[str] = "stability"
-    stiff_stability: List[StiffnessStability]  = Field([StiffnessStability()], description='stiff stability information')
-    thermo_stability: List[ThermoDynamicStability]  = Field([ThermoDynamicStability()], description='thermo stability information')
-    phonon_stability: List[PhononStability]  = Field([PhononStability()], description='phon stability information')
+    stability: Dict[str,Stability] = Field({}, description='2d Mechanics information')
+    provenance: Dict[str,LocalProvenance] = Field({}, description="Property provenance")
 
 if __name__=='__main__': 
-   ustr1=str(uuid.uuid4())
-   ustr2=str(uuid.uuid4())
-   pd=StabilityDoc(created_at=datetime.now(),
-           stiff_stability =  [  StiffnessStability.from_key(min_eig_tensor=0.1) ],
-           thermo_stability=  [ ThermoDynamicStability.from_key (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static') ],
-      origins=[
-              PropertyOrigin(name='static',task_id='task-112'),
-              PropertyOrigin(name='static',task_id='task-113'),
-               ],
-      material_id='rsb-1',
-      tags = ['high temperature phase']
+   from monty.serialization import loadfn,dumpfn
+   origins=[
+            Origin(name='pbe-static',task_id='task-112'),
+            Origin(name='pbe-static-d2',task_id='task-112'),
+            ]
+   provenance=LocalProvenance(origins=origins,
+                              created_at=datetime.now(),
+                              tags = ['high temperature phase'])
+   stability = Stability(
+           stiff_stability =  StiffnessStability.from_key(min_eig_tensor=0.1) ,
+           thermo_stability=  ThermoDynamicStability.from_key (formation_energy_per_atom=-0.1, energy_above_hull=0.0,description='pbe-static') 
+               )
+   pd=StabilityDoc(
+      stability  = {"PBE": stability },
+      provenance = {"PBE": provenance} 
       )
    print(pd.json())
-   from monty.serialization import loadfn,dumpfn
    dumpfn(jsanitize(pd),'stab.json',indent=4)

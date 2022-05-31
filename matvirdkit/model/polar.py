@@ -8,12 +8,11 @@ from pymatgen.analysis.piezo import PiezoTensor as BasePiezoTensor
 
 from matvirdkit.model.settings import MAX_PIEZO_MILLER
 from matvirdkit.model.structure import StructureMetadata
-from matvirdkit.model.properties import PropertyDoc,PropertyOrigin
 from matvirdkit.model.utils import VoigtVector,Matrix3D,Vector3D
 from matvirdkit.model.utils import Tensor as PiezoTensor
 
 
-class Dielectric(PropertyDoc):
+class Dielectric(BaseModel):
     """
     A dielectric property block
     """
@@ -56,7 +55,7 @@ class Dielectric(PropertyDoc):
         )
 
 
-class Piezoelectric(PropertyDoc):
+class Piezoelectric(BaseModel):
     """
     A dielectric package block
     """

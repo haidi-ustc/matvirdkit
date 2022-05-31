@@ -4,12 +4,10 @@ from functools import partial
 from typing import ClassVar, Dict, List, Union
 
 from pydantic import Field,BaseModel
-from matvirdkit.model.properties import PropertyDoc
 #from structure import StructureMetadata
 #from pymatgen.core.spectrum import Spectrum
 
-
-class SpectrumDoc(PropertyDoc):
+class SpectrumDoc(BaseModel):
     """
     Base model definition for any spectra document. This should contain
     metadata on the structure the spectra pertains to

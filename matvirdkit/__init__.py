@@ -23,7 +23,7 @@ fsc = logging.FileHandler(logfile, mode='w')
 fsc.setLevel(logging.DEBUG)
 
 ch = logging.StreamHandler()
-ch.setLevel(logging.INFO) 
+ch.setLevel(logging.DEBUG) 
 
 formatter = logging.Formatter('%(asctime)s - %(levelname)s : %(message)s')
 #formatter=logging.Formatter('%(asctime)s - %(name)s - [%(filename)s:%(funcName)s - %(lineno)d ] - %(levelname)s \n %(message)s')

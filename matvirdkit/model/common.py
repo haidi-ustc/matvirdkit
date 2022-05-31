@@ -9,8 +9,8 @@ from pydantic import BaseModel, EmailStr, Field, validator,constr
 from matvirdkit.model.utils import ValueEnum
 
 class MatvirdBase(BaseModel):
-      description : Optional[str] = ''
-      label: Optional[str] = ''
+      description : Optional[str] = Field('', description='detail information about the property')
+      #label: Optional[str] = Field('', description='label information')
       #link: List[str] = Field([])
       meta: Dict[str,Any]  = Field({}, description='meta information')
 
@@ -69,8 +69,8 @@ class JFData(MatvirdBase):
      json_data: Optional[Dict] = Field({},description='json data that will be saved in current data structure')
 
 class DataFigure(BaseModel):
-    data: List[JFData] = Field(None,description='data')
-    figure: JFData = Field(...,description='figure')
+    data: List[JFData] = Field([],description='data')
+    figure: JFData = Field(None,description='figure')
 
 class Meta(BaseModel):
       description : Optional[str] = Field(None,description='Meta information')
@@ -105,11 +105,6 @@ class ReferenceDB(ValueEnum):
     MatPedia2D='2dmatpedia'
     C2DB='c2db'
     
-
-#class ReferenceDB(BaseModel):
-#    database_IDs: Dict[str, List[str]] = Field(
-#        dict(), description="Database IDs corresponding to this material"
-#    )
 
 class Source(BaseModel):
       description : Optional[str] =  Field(None,description='Meta information')

@@ -13,6 +13,7 @@ from pymatgen.core import Composition, Structure
 from pymatgen.entries.computed_entries import ComputedEntry, ComputedStructureEntry
 from pymatgen.io.vasp import VaspInput,Vasprun,Outcar,Oszicar,Elfcar,Locpot,Chgcar,Procar,Poscar
 
+from matvirdkit import log
 from matvirdkit.model.utils import Matrix3D, Vector3D,ValueEnum
 from matvirdkit.model.structure import StructureMetadata,StructureMP
 from matvirdkit.model.vasp.calc_types.enums import CalcType, RunType, TaskType 
@@ -268,6 +269,7 @@ class TaskDocument(StructureMetadata):
            if os.path.isfile(f_task):
               _dtask=loadfn(os.path.join(tag['path'],'task.json'),cls=None)
               _dtask.update(kwargs)
+              log.info('Skip parsing !!!')
               return cls(**_dtask)
            else:
               pass
