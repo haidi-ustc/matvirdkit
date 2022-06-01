@@ -1,10 +1,13 @@
 import os
 import inspect
 import pandas as pd
+import warnings
+import numpy as np
 from pprint import pprint
 from datetime import datetime
 from hashlib import sha1
 from monty.json import MSONable
+from monty.serialization import loadfn,dumpfn
 from matvirdkit.model.utils import jsanitize
 
 from abc import ABCMeta, abstractmethod
@@ -16,7 +19,7 @@ from matvirdkit.model.electronic import EMC,Bandgap,Mobility,Workfunction,Electr
 from matvirdkit.model.properties import PropertyOrigin
 from matvirdkit.model.thermo import Thermo,ThermoDoc
 from matvirdkit.model.xrd import Xrd,XrdDoc
-from matvirdkit.model.stability import ThermoDynamicStability,PhononStability,StiffnessStability,StabilityDoc
+from matvirdkit.model.stability import ThermoDynamicStability,PhononStability,StiffnessStability,StabilityDoc,Stability
 from matvirdkit.model.common import Meta,MetaDoc,Source,SourceDoc,Task,TaskDoc,DataFigure, JFData
 from matvirdkit.model.magnetism import Magnetism,MagnetismDoc
 from matvirdkit.model.structure import StructureMatvird
@@ -32,14 +35,14 @@ __author__ = "Matvird"
 def function_name():
     return inspect.stack()[1][3]
 
-supported_dataset = ['bms', 'mech2d', 'npr2d', 'penta',  'rashba'
-                     'carbon2d', 'carbon3d', 'raman' ]
-DocKeys = ['thermo', 'magnetism', 'electronic', 'xrd', 'mechanics2d', 'meta','source']
+supported_dataset = ['bms', 'mech2d', 'npr2d', 'penta',  'rashba', 'carbon2d', 'carbon3d', 'raman' ]
+DocKeys = ['electronic', 'magnetism', 'stability', 'thermo', 'xrd', 'mechanics2d', 'meta', 'source']
 
 class Builder(metaclass=ABCMeta):
     def __init__(self, material_id : str, dataset :str , dimension = None, root_dir=None ):
         self.material_id = material_id
         assert dataset in supported_dataset
+        self.dataset = dataset
         self.root_dir =  root_dir if root_dir else REPO_DIR
         self.work_dir =  os.path.join(self.root_dir,dataset,material_id)
         self.mech_dir =  os.path.join(self.root_dir,dataset,material_id,'mechanics')
@@ -58,25 +61,17 @@ class Builder(metaclass=ABCMeta):
         self._thermo      = {}  #thermo
         self._electronicstructure  = {}  #
         self._mechanics2d  = {}
-        self._mechanics    = []
-        self._mechanics2d_origins = []
-        
-        self._stability    = []
-        self._thermo_stability = []
-        self._stiff_stability = []
-        self._phonon_stability    = []
-
+        self._mechanics    = {}
+        self._stability    = {}
         self._magnetism    = {}
         self._xrd          = {}
         self._raman        = {}
         self._polar        = {}
-        self._source      = []
-        self._provenance   = []
+
+        self._source      =  []
         self._meta         = []
 
         self._customer     = {}
-        self._origins      = {}
-        self._provenance   = {}
 
         self._tasks = []
         self._properties   = {}
@@ -380,59 +375,139 @@ class Builder(metaclass=ABCMeta):
         return self._bands   
     
     #----------------- stability ------------
-    def set_stiff_stability(self,min_eig_tensor=None,value=None,**kwargs) -> None:
+    def stiff_stability(self,min_eig_tensor=None,value=None,**kwargs):
         if value:
-           self._stiff_stability.append(StiffnessStability(value=value,**kwargs))
+           return StiffnessStability(value=value,**kwargs)
         else:
-           self._stiff_stability.append(StiffnessStability.from_key(min_eig_tensor=min_eig_tensor,**kwargs))
+           return StiffnessStability.from_key(min_eig_tensor=min_eig_tensor,**kwargs)
 
-    def get_stiff_stability(self) -> StiffnessStability:
-        return self._stiff_stability
-
-    def set_phonon_stability(self,max_hessian=None,value=None,**kwargs) -> None:
+    def phonon_stability(self,max_hessian=None,value=None,**kwargs):
         if value:
-           self._phonon_stability.append(PhononStability(value=value,**kwargs))
+           return PhononStability(value=value,**kwargs)
         else:
-           self._phonon_stability.append(PhononStability.from_key(max_hessian=max_hessian,**kwargs)) 
+           return PhononStability.from_key(max_hessian=max_hessian,**kwargs)
 
-    def get_phonon_stability(self) -> PhononStability:
-        return self._phonon_stability
-
-    def set_thermo_stability(self,formation_energy_per_atom=None,
+    def thermo_stability(self,formation_energy_per_atom=None,
                                      energy_above_hull=None,
-                                     value=None,**kwargs) -> None:
+                                     value=None,**kwargs) :
         if value:
-           self._thermo_stability.append(ThermoDynamicStability(value=value,**kwargs))
+           return ThermoDynamicStability(value=value,**kwargs)
         else:
-           self._thermo_stability.append(ThermoDynamicStability.from_key(formation_energy_per_atom=formation_energy_per_atom,
- energy_above_hull=energy_above_hull,
-  **kwargs)) 
+           return ThermoDynamicStability.from_key(
+                formation_energy_per_atom=formation_energy_per_atom,
+                energy_above_hull=energy_above_hull,
+                **kwargs) 
 
-    def get_thermo_stability(self) -> ThermoDynamicStability:
-        return self._thermo_stability
+    def set_stability(self, infos) -> None:
+        thermo_stability_value = 'unknown'
+        stiff_stability_value = 'unknown'
+        phonon_stability_value = 'unknown'
+        func_name=function_name().split('_')[-1]
+        log.debug('Func name: set_%s()'%func_name) 
+        for label in infos.get(func_name,{}).keys():
+            info=infos[func_name].get(label,{})
+            prov=info.pop('provenance',{})
+            #info.pop('provenance',0)
+            #----------thermo-------------
+            d_thermo_stability = info.pop("thermo_stability",{})
+            thermo_doc= self.get_ThermoDoc()
+            if thermo_doc:
+               formation_energy_per_atom=thermo_doc.thermo.get(label,{}).formation_energy_per_atom
+               energy_above_hull=thermo_doc.thermo.get(label,{}).energy_above_hull
+               if formation_energy_per_atom and energy_above_hull:
+                  thermo_stability = self.thermo_stability(formation_energy_per_atom=formation_energy_per_atom,energy_above_hull=energy_above_hull)
+               else:
+                  thermo_stability  = self.thermo_stability(value=thermo_stability_value)
+            else:   
+               if "from_json" in d_thermo_stability.keys():
+                   thermo_stability = self.thermo_stability(**d_thermo_stability['from_json'])
+               elif "from_value" in d_thermo_stability.keys():
+                   thermo_stability = self.thermo_stability(value=d_thermo_stability['from_value'])
+               elif "from_directory" in d_thermo_stability.keys():
+                  warnings.warn('Not implimented method')
+                  thermo_stability  = self.thermo_stability(value=thermo_stability_value)
+               else:
+                  warnings.warn('Dict : thermo_stability parsing error')
+                  thermo_stability  = self.thermo_stability(value=thermo_stability_value)
+            #----------stiff-------------
+            d_stiff_stability = info.pop("stiff_stability",{})
+            mechanics2d_doc= self.get_Mechanics2dDoc()
+            if mechanics2d_doc:
+               C_energy=mechanics2d_doc.mechanics2d.get(label,{}).elc2nd_energy.summary.c_tensor
+               if C_energy:
+                  if self.dimension==2:
+                     min_eig_tensor_energy=min(np.linalg.eigvals(C_energy)[[0,1,-1]])
+                  elif self.dimension==3:
+                     min_eig_tensor_energy=min(np.linalg.eigvals(C_energy))
+                  else:
+                     pass
+ 
+               C_stress=mechanics2d_doc.mechanics2d.get(label,{}).elc2nd_stress.summary.c_tensor
+               if C_stress:
+                  if self.dimension==2:
+                     min_eig_tensor_stress=min(np.linalg.eigvals(C_stress)[[0,1,-1]])
+                  elif self.dimension==3:
+                     min_eig_tensor_stress=min(np.linalg.eigvals(C_stress))
+                  else:
+                     pass
 
-    def set_StabilityDoc(self,  created_at= None, **kwargs) -> None:
+               if C_stress and C_energy:  
+                  if (np.array([min_eig_tensor_stress, min_eig_tensor_energy])>0).all():
+                     value='high'
+                  else:
+                     value='checking'
+                  stiff_stability  = self.stiff_stability(value=value)
+               elif not C_stress and C_energy:  
+                  stiff_stability  = self.stiff_stability(min_eig_tensor=min_eig_tensor_energy)
+               elif C_stress and not C_energy:  
+                  stiff_stability  = self.stiff_stability(min_eig_tensor=min_eig_tensor_stress)
+               else:
+                  stiff_stability = self.stiff_stability(value=stiff_stability_value)
+            else:     
+                 
+               if "from_json" in d_stiff_stability.keys():
+                   stiff_stability = self.stiff_stability(**d_stiff_stability['from_json'])
+               elif "from_value" in d_stiff_stability.keys():
+                   stiff_stability = self.stiff_stability(value=d_stiff_stability['from_value'])
+               elif "from_directory" in d_stiff_stability.keys():
+                   warnings.warn('Not implimented method')
+                   stiff_stability = self.stiff_stability(value=stiff_stability_value)
+               else:
+                   warnings.warn('Dict : stiff_stability parsing error')
+                   stiff_stability = self.stiff_stability(value=stiff_stability_value)
+            #----------phonon-------------
+            d_phonon_stability = info.pop("phonon_stability",{})
+              
+            if "from_json" in d_phonon_stability.keys():
+                phonon_stability = self.phonon_stability(**d_phonon_stability['from_json'])
+            elif "from_value" in d_phonon_stability.keys():
+                phonon_stability = self.phonon_stability(value=d_phonon_stability['from_value'])
+            elif "from_directory" in d_phonon_stability.keys():
+                warnings.warn('Not implimented method')
+                phonon_stability = self.phonon_stability(value=phonon_stability_value)
+            else:
+                warnings.warn('Dict : phonon_stability parsing error')
+                phonon_stability = self.phonon_stability(value=phonon_stability_value)
+            print ( '---*--',thermo_stability)
+            provenance=self._get_provenance(prov)
+            self._stability [label] = Stability(provenance=provenance,
+                                                stiff_stability= stiff_stability,
+                                                thermo_stability= thermo_stability,
+                                                phonon_stability=  phonon_stability,
+                                                **info) 
 
-        created_at = created_at if created_at else datetime.now()
-        self._StabilityDoc= StabilityDoc(created_at = created_at ,
-                         material_id = self.material_id,
-                         stiff_stability = self.get_stiff_stability(),
-                         thermo_stability = self.get_thermo_stability(),
-                         phonon_stability = self.get_phonon_stability(),
-                         origins  = self.get_origins('stability'),
-                         **kwargs)
+    def get_stability(self) -> Dict:
+        return self._stability
+   
+    def set_StabilityDoc(self) -> None:
+
+        self._StabilityDoc= StabilityDoc(
+                         stability = self.get_stability()
+                          )
         self.registery_doc(function_name().split('_')[-1])
 
     def get_StabilityDoc(self) -> Union[StabilityDoc,Dict]:
         return self._StabilityDoc  
-
-    #----------------- customer ------------
-    def set_customer(self,label : str, data : Dict) -> None:
-        #d={"label":label,"data":data}
-        self._customer[label]=data
-  
-    def get_customer(self):
-        return self._customer
 
     #---------------------------------------
     def get_PropertiesDoc(self):
@@ -459,7 +534,7 @@ class Builder(metaclass=ABCMeta):
         }
         return {"@module": self.__class__.__module__,
                 "@class": self.__class__.__name__,
-                "version": self.__class__.__version__,
+                #"version": self.__class__.__version__,
                 "init_args": init_args
                 }
 
@@ -553,27 +628,35 @@ class Builder(metaclass=ABCMeta):
         pass
 
     @classmethod
-    def from_file(cls,fname='info.yaml'):
+    def from_file(cls,fname='info.json'):
         infos=loadfn(fname)
-        parameters = infos['parameters']
+        parameters = infos.pop('parameters')
         dataset = parameters['dataset'] 
         dimension = parameters['dimension'] 
         material_id = parameters['material_id'] if parameters['material_id']  else 'm2d-2'
         root_dir = parameters['root_dir'] 
-        infos.pop('parameters')
-        f_structure = infos['structure']['filename']
-        infos.pop('structure')
-        builder=cls(material_id = material_id, dataset = dataset, root_dir= root_dir)
+        f_structure = infos.pop('structure')['filename']
+        #f_structure = infos['structure']['filename']
+        builder=cls(material_id = material_id, dataset = dataset, dimension=dimension, root_dir= root_dir)
         builder.set_structure(fname=f_structure)
         builder.set_StructureDoc()
         for key in infos.keys():
+            if (key not in DocKeys) and  (key not in ['tasks','customer']):
+               DocKeys.append(key)   
+        
+        print(DocKeys)
+        for key in DocKeys:
                log.info('--------set %s-------'%key)
-               if key in DocKeys:     
-                  func_set = getattr(builder, 'set_'+key)
-                  func_set(infos)
-                  Func_set = getattr(builder, 'set_'+key.capitalize()+'Doc' )
-                  Func_set()
+               try:
+                   func_set = getattr(builder, 'set_'+key)
+               except AttributeError:
+                   log.info('Bound method: %s not found, skip '%('set_'+key+'()'))
+                   continue
+               func_set(infos)
+               Func_set = getattr(builder, 'set_'+key.capitalize()+'Doc' )
+               Func_set()
         tasks = infos.get('tasks',[])
+        log.debug(tasks)
         builder.set_tasks(tasks)     
         builder.set_TaskDoc()
         builder.set_properties()
@@ -581,9 +664,8 @@ class Builder(metaclass=ABCMeta):
         return builder
 
 if __name__ == '__main__':
-   from monty.serialization import loadfn,dumpfn
    from matvirdkit.model.utils import test_path
-   builder=Builder.from_file(fname='info.yaml')
+   builder=Builder.from_file(fname='info.json')
    #doc=builder.get_doc()
    #dumpfn(doc,'doc.json',indent=4)
    builder.save_doc()

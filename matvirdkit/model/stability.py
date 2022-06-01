@@ -14,6 +14,8 @@ class StabilityLevel(ValueEnum):
       low='low'
       middle='middle'
       high='high'
+      unknown='unknown'
+      check='checking'
 
 class ThermoDynamicStability(MatvirdBase):
       value: StabilityLevel = Field(None, description='stability from thermodynamic')

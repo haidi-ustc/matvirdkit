@@ -1,0 +1,300 @@
+{
+    "parameters": {
+        "dataset": "mech2d",
+        "material_id": null,
+        "root_dir": null,
+        "dimension": 2
+    },
+    "structure": {
+        "filename": "/home/wang/dev/mvd-dev/tests_files/relax/CONTCAR"
+    },
+    "thermo": {
+        "GGA-PBE": {
+            "energy_above_hull": 0.1,
+            "exfoliation_energy": 0.0,
+            "energy_per_atom": null,
+            "formation_energy_per_atom": null,
+            "provenance": {
+                "energy_above_hull": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/relax",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {
+                        "authors": [
+                            {
+                                "name": "haidi",
+                                "email": "haidi@hfut.edu.cn"
+                            },
+                            {
+                                "name": "zhangsan",
+                                "email": "zhangsan@ustc.edu.cn"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "GGA-PBE+U": {
+            "energy_above_hull": 0.1,
+            "exfoliation_energy": 0.0,
+            "provenance": {
+                "energy_above_hull": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "code": "vasp"
+                        },
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/relax",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                }
+            }
+        }
+    },
+    "magnetism": {
+        "GGA-PBE": {
+            "magneatic_moment": 2.0,
+            "magnetic_order": "FiM",
+            "exchange_energy": 0.1,
+            "magnetic_anisotropy": {},
+            "provenance": {
+                "magneatic_moment": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                }
+            }
+        },
+        "GGA-PBE+U": {
+            "magneatic_moment": 0.0,
+            "magnetic_order": "AFM",
+            "exchange_energy": null,
+            "magnetic_anisotropy": {},
+            "provenance": {
+                "magneatic_moment": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                }
+            }
+        }
+    },
+    "electronic": {
+        "GGA-PBE": {
+            "bandgap": {
+                "direct": false,
+                "value": 0.5
+            },
+            "emc": {},
+            "mobility": {},
+            "workfunction": {},
+            "band": {},
+            "dos": {},
+            "provenance": {
+                "dos": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                },
+                "emc": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/relax",
+                            "code": "vasp"
+                        },
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                }
+            }
+        },
+        "GGA-PBE+U": {
+            "bandgap": {
+                "direct": false,
+                "value": 0.3
+            },
+            "emc": {
+                "k_loc": "Gamma",
+                "b_loc": "VB",
+                "value": 0.3
+            },
+            "mobility": {},
+            "workfunction": {},
+            "band": {},
+            "dos": {},
+            "provenance": {
+                "dos": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/relax",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                },
+                "emc": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/relax",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                }
+            }
+        }
+    },
+    "xrd": {
+        "Cu-Ka": {
+            "target": "Cu",
+            "edge": "Ka",
+            "min_two_theta": 0,
+            "max_two_theta": 180,
+            "provenance": {
+                "Cu-Ka": {
+                    "task_infos": [],
+                    "meta": {
+                        "authors": [
+                            {
+                                "name": "haidi",
+                                "email": "haidi@hfut.edu.cn"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "mechanics2d": {
+        "GGA-PBE": {
+            "elc2nd_stress": {
+                "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R"
+            },
+            "elc2nd_energy": {
+                "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R"
+            },
+            "stress_strain": {
+                "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R"
+            },
+            "provenance": {
+                "elc2nd_stress": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                },
+                "elc2nd_energy": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                },
+                "stress_strain": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                }
+            }
+        }
+    },
+    "stability": {
+        "GGA-PBE": {
+            "phonon_stability": {
+                "from_json": { "max_hessian": 0.1 }
+            },
+            "stiff_stability": {
+                "from_directory": null
+            },
+            "thermo_stability": {
+                "from_value": "high"
+            },
+            "provenance": {
+                "phonon_stability": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "code": "vasp"
+                        },
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/relax",
+                            "code": "vasp"
+                        }
+                    ],
+                    "meta": {}
+                }
+            }
+        }
+    },
+    "meta": [
+        {
+            "user": "haidi",
+            "machine": "cluster@HFUT",
+            "description": "clster-88"
+        },
+        {
+            "user": "ergouzi",
+            "machine": "cluster@USTC",
+            "description": "cluster-10"
+        }
+    ],
+    "source": [
+        {
+            "db_name": "c2db",
+            "material_id": "As4Ca4-bf7bbbdbefe0",
+            "material_url": "https://cmrdb.fysik.dtu.dk/c2db/row/As4Ca4-bf7bbbdbefe0"
+        },
+        {
+            "db_name": "icsd",
+            "material_id": "22388"
+        }
+    ],
+    "tasks": [
+        {
+            "task_dir": "/home/wang/dev/mvd-dev/tests_files/relax",
+            "code": "qe"
+        }
+    ],
+    "customer": {
+        "data": [
+            1,
+            2,
+            3
+        ],
+        "url": "www.baidu.com",
+        "info": {
+            "name": "wang",
+            "age": 18
+        }
+    }
+}

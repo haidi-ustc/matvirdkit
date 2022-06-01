@@ -2,7 +2,7 @@ parameters:
   dataset: mech2d
   material_id:
   root_dir:
-  dimension: 3
+  dimension: 2
 structure:
   filename: /home/wang/dev/mvd-dev/tests_files/relax/CONTCAR
 thermo:
@@ -142,12 +142,12 @@ mechanics2d:
 stability:
   GGA-PBE:
     phonon_stability:
-      max_hessian: 0.1
+      from_json:
+        max_hessian: 0.1
     stiff_stability:
-      min_eig_tensor: 0.2
+      from_directory:
     thermo_stability:
-      energy_above_hull:
-      formation_energy_per_atom:
+      from_value: high
     provenance:
       phonon_stability:
         task_infos:
