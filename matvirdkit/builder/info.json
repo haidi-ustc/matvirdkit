@@ -199,30 +199,18 @@
             },
             "provenance": {
                 "elc2nd_stress": {
-                    "task_infos": [
-                        {
-                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
-                            "code": "vasp"
-                        }
-                    ],
+                    "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
+                    "code":"vasp",
                     "meta": {}
                 },
                 "elc2nd_energy": {
-                    "task_infos": [
-                        {
-                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
-                            "code": "vasp"
-                        }
-                    ],
+                    "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
+                    "code":"vasp",
                     "meta": {}
                 },
                 "stress_strain": {
-                    "task_infos": [
-                        {
-                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
-                            "code": "vasp"
-                        }
-                    ],
+                     "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
+                    "code":"vasp",
                     "meta": {}
                 }
             }

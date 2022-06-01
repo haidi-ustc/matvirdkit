@@ -90,7 +90,7 @@ class Task(BaseModel):
 
 class TaskDoc(BaseModel):
       property_name: ClassVar[str] = "task"
-      task: List[Task] = Field([],description='list of tasks')
+      task: Dict[str,Task] = Field({},description='dict of tasks')
 
 class ReferenceDB(ValueEnum):
     """

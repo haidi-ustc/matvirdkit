@@ -3,6 +3,7 @@ import inspect
 import pandas as pd
 import warnings
 import numpy as np
+from glob import glob
 from pprint import pprint
 from datetime import datetime
 from hashlib import sha1
@@ -14,7 +15,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Tuple, Optional, Union, Iterator, Set, Sequence, Iterable
 from pymatgen.core import Structure
 from matvirdkit import log,REPO_DIR 
-from matvirdkit.model.utils import jsanitize,create_path
+from matvirdkit.model.utils import jsanitize,create_path,sha1encode
 from matvirdkit.model.electronic import EMC,Bandgap,Mobility,Workfunction,ElectronicStructureDoc
 from matvirdkit.model.properties import PropertyOrigin
 from matvirdkit.model.thermo import Thermo,ThermoDoc
@@ -70,10 +71,10 @@ class Builder(metaclass=ABCMeta):
 
         self._source      =  []
         self._meta         = []
+        self._tasks = {}
 
         self._customer     = {}
 
-        self._tasks = []
         self._properties   = {}
 
         self._doses=  []
@@ -146,8 +147,8 @@ class Builder(metaclass=ABCMeta):
         log.debug('Func name: set_%s()'%func_name) 
         for label in infos.get(func_name,{}).keys():
             info=infos[func_name].get(label,{})
-            prov=info.get('provenance',{})
-            info.pop('provenance',0)
+            #prov=info.get('provenance',{})
+            prov=info.pop('provenance',{})
             #description=info.get('description','')
             #root_meta=info.get('meta',{})
             provenance=self._get_provenance(prov)
@@ -168,6 +169,32 @@ class Builder(metaclass=ABCMeta):
         provenance={}
         if prov:
            pass
+        else:
+           return provenance
+
+        for key in prov.keys():
+            pmap={"elc2nd_stress":"elc_stress","elc2nd_energy":"elc_energy","stress_strain":"ssc_stress"}
+            task_info=prov[key]
+            meta=task_info.get("meta",{})
+            task_dir=task_info.get('task_dir','')
+            code=task_info.get('code','')
+            # make sure only one task_info in the list
+            log.debug('key  :%s'%key)
+            if task_dir:
+               fs=glob(os.path.join(task_dir,pmap[key],'Def_*/Def_*_[0-9][0-9][0-9]') )
+               fs.sort()
+               origins=[]
+               for f in fs:
+                   log.debug('dir: %s'%f)
+                   description=f.replace(task_dir+'/','')
+                   task_id,calc_type = self.encode_task(f,code=code)
+                   self.set_task( task_id = task_id, code= code, calc_type = str(calc_type) , description=description)
+                   log.debug('task_id: %s calc_type: %s'%(task_id,calc_type))
+                   origins.append(Origin(name=str(calc_type),task_id = str(task_id)))
+               provenance[key]=LocalProvenance(origins=origins,**meta)
+            else:
+               provenance[key]={}
+        return provenance
 
     def _get_provenance(self,prov={}):
         provenance={}
@@ -209,8 +236,8 @@ class Builder(metaclass=ABCMeta):
             dos=DataFigure(**info.get('dos',{}))
             description=info.get('description','')
             root_meta=info.get('meta',{})
-            prov=info.get('provenance',{})
-            info.pop('provenance',0)
+            #prov=info.get('provenance',{})
+            prov=info.pop('provenance',{})
             provenance=self._get_provenance(prov)
             self._electronicstructure  [label] = ElectronicStructure(provenance=provenance,
                                       bandgap=bandgap,
@@ -247,10 +274,8 @@ class Builder(metaclass=ABCMeta):
             elc2nd_stress = mechanics2d_parser(elc2nd_stress_dir,self.mech_dir,'elc_stress')
             elc2nd_energy = mechanics2d_parser(elc2nd_energy_dir,self.mech_dir,'elc_energy')
             stress_strain = mechanics2d_parser(stress_strain_dir,self.mech_dir,'ssc_stress')
-            prov=info.get('provenance',{})
-            info.pop('provenance',0)
-            #provenance=self._get_mechanics2d_provenance(prov)
-            provenance={}
+            prov=info.pop('provenance',{})
+            provenance=self._get_mechanics2d_provenance(prov)
             self._mechanics2d  [label] = Mechanics2d(provenance=provenance,
                                       elc2nd_stress=elc2nd_stress,
                                       elc2nd_energy=elc2nd_energy,
@@ -407,7 +432,6 @@ class Builder(metaclass=ABCMeta):
         for label in infos.get(func_name,{}).keys():
             info=infos[func_name].get(label,{})
             prov=info.pop('provenance',{})
-            #info.pop('provenance',0)
             #----------thermo-------------
             d_thermo_stability = info.pop("thermo_stability",{})
             thermo_doc= self.get_ThermoDoc()
@@ -550,7 +574,9 @@ class Builder(metaclass=ABCMeta):
             if task_id:
                task_info['task_id'] = task_id
                task_info['calc_type'] = calc_type
-               self._tasks.append(Task(**task_info)) 
+               task=Task(**task_info)
+               hash_id = sha1encode (task)
+               self._tasks[hash_id]= task
 
     def encode_task(self,task_dir, code='vasp', **kwargs ):
         task_id=''
@@ -563,13 +589,15 @@ class Builder(metaclass=ABCMeta):
         return task_id, calc_type
 
     def set_task(self, task_id , code= 'vasp', calc_type = '' , description='') -> None:
-        self._tasks.append(Task(
-                              task_id=task_id,   
+        task = Task(         task_id=task_id,   
                               code = code,   
                               calc_type = calc_type,   
                               description = description   
-                            ))
-    def get_task(self) -> List:
+                           )
+        hash_id = sha1encode (task)
+        self._tasks[hash_id]= task
+
+    def get_task(self) -> Dict:
         return self._tasks
     
     def set_TaskDoc(self) -> None:
