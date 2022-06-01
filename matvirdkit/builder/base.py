@@ -23,6 +23,7 @@ from matvirdkit.model.xrd import Xrd,XrdDoc
 from matvirdkit.model.stability import ThermoDynamicStability,PhononStability,StiffnessStability,StabilityDoc,Stability
 from matvirdkit.model.common import Meta,MetaDoc,Source,SourceDoc,Task,TaskDoc,DataFigure, JFData
 from matvirdkit.model.magnetism import Magnetism,MagnetismDoc
+from matvirdkit.model.bms import BMS, BMSDoc
 from matvirdkit.model.structure import StructureMatvird
 from matvirdkit.model.mechanics import Mechanics2d,Mechanics2dDoc
 from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin
@@ -65,6 +66,7 @@ class Builder(metaclass=ABCMeta):
         self._mechanics    = {}
         self._stability    = {}
         self._magnetism    = {}
+        self._bms    = {}
         self._xrd          = {}
         self._raman        = {}
         self._polar        = {}
@@ -91,6 +93,7 @@ class Builder(metaclass=ABCMeta):
         self._StabilityDoc = {}
         self._TaskDoc = {}
         self._Mechanics2dDoc = {}
+        self._BMSDoc = {}
 
 
     @property 
@@ -293,6 +296,26 @@ class Builder(metaclass=ABCMeta):
     
     def get_Mechanics2dDoc(self):
         return self._Mechanics2dDoc
+
+    #-----------------BMS--------------------
+    def set_bms(self, infos) -> None:
+        func_name=function_name().split('_')[-1]
+        log.debug('Func name: set_%s()'%func_name) 
+        for label in infos.get(func_name,{}).keys():
+            info=infos[func_name].get(label,{})
+            prov=info.pop('provenance',{})
+            provenance=self._get_provenance(prov)
+            self._bms [label] = BMS(provenance=provenance,**info) 
+
+    def get_bms(self) -> Dict:
+        return self._bms
+
+    def set_Bms(self ) -> None:
+        self._BmsDoc= BMSDoc(bms=self.get_bms())
+        self.registery_doc(function_name().split('_')[-1])
+
+    def get_BmsDoc(self) -> Union[Dict ,BmsDoc]:
+        return self._BmsDoc
 
     #-----------------magnetism--------------------
     def set_magnetism(self, infos) -> None:
