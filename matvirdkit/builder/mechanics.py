@@ -49,7 +49,8 @@ def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
            def_data=JFData(description='Energy v.s. strain data', json_data= {'data':data},
              json_file_name=None,json_id=None,meta={})
            def_fig=JFData(description='Energy v.s. strain figure',
-             ile_fmt='png', file_name=os.path.join(dst_dir,prop,_def, _def+'_Energy_Strain.png'),file_id=None)
+             file_fmt='png', file_name=os.path.join('mechanics',prop,_def, _def+'_Energy_Strain.png'),file_id=None)
+             #file_fmt='png', file_name=os.path.join(dst_dir,prop,_def, _def+'_Energy_Strain.png'),file_id=None)
            def_datafig=DataFigure(data=[def_data],figure=def_fig)
            deformations[_def]=def_datafig
        os.chdir(pwd)
@@ -63,7 +64,8 @@ def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
              json_file_name=None,json_id=None,meta={})
        summary=Mechanics2dSummary.from_file(os.path.join(dst_dir,prop,'Result.json'))
        ev_fig=JFData(description='Angle dependent Young\'s modulus and Poisson\'s ratio figure',
-             file_fmt='png', file_name=os.path.join(dst_dir,prop,'energy-EV.png'),file_id=None)
+             file_fmt='png', file_name=os.path.join('mechanics',prop,'energy-EV.png'),file_id=None)
+             #file_fmt='png', file_name=os.path.join(dst_dir,prop,'energy-EV.png'),file_id=None)
        ev_datafig=DataFigure(data=[ev_data],figure=ev_fig)
          
        ret['summary'] = summary
@@ -96,7 +98,8 @@ def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
            def_Phy_data=JFData(description='Energy v.s. strain data', json_data= {'data':data_Phy},
              json_file_name=None,json_id=None,meta={})
            def_fig=JFData(description='Energy v.s. strain figure',
-             ile_fmt='png', file_name=os.path.join(dst_dir,prop,_def, _def+'_Energy_Strain.png'),file_id=None)
+             file_fmt='png', file_name=os.path.join('mechanics',prop,_def, _def+'_Energy_Strain.png'),file_id=None)
+             #file_fmt='png', file_name=os.path.join(dst_dir,prop,_def, _def+'_Energy_Strain.png'),file_id=None)
            def_datafig=DataFigure(data=[def_Lag_data, def_Phy_data],figure=def_fig)
            deformations[_def]=def_datafig
        os.chdir(pwd)
@@ -109,7 +112,8 @@ def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
              json_file_name=None,json_id=None,meta={})
        summary=Mechanics2dSummary.from_file(os.path.join(dst_dir,prop,'Result.json'))
        ev_fig=JFData(description='Angle dependent Young\'s modulus and Poisson\'s ratio figure',
-             file_fmt='png', file_name=os.path.join(dst_dir,prop,'stress-EV.png'),file_id=None)
+             file_fmt='png', file_name=os.path.join('mechanics',prop,'stress-EV.png'),file_id=None)
+             #file_fmt='png', file_name=os.path.join(dst_dir,prop,'stress-EV.png'),file_id=None)
        ev_datafig=DataFigure(data=[ev_data],figure=ev_fig)
          
        ret['summary'] = summary
@@ -141,7 +145,8 @@ def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
            data=JFData(description='SS data', json_data= {'SS_Lagrangian':SS_Lag,'SS_Physical':SS_Phy},
                  json_file_name=None,json_id=None,meta={})
            fig=JFData(description='SS Lag figure',
-             file_fmt='png', file_name=os.path.join(dst_dir,prop,ssc,ssc+'_Lagrangian_Stress.png'),file_id=None)
+             file_fmt='png', file_name=os.path.join('mechanics',prop,ssc,ssc+'_Lagrangian_Stress.png'),file_id=None)
+             #file_fmt='png', file_name=os.path.join(dst_dir,prop,ssc,ssc+'_Lagrangian_Stress.png'),file_id=None)
            data_fig=DataFigure(data=[data],figure=fig)
            ret['stress_strain'][ssc]=data_fig
     else:
@@ -149,7 +154,7 @@ def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
 
     transfer_file('Mech2D.json', os.path.join(task_dir,prop) , os.path.join(dst_dir,prop) , rename= False)
     meta=JFData(description='meta data',
-             json_file_name=os.path.join(dst_dir,prop,'Mech2D.json'),json_id=None,meta={})
+             json_file_name=os.path.join('mechanics',prop,'Mech2D.json'),json_id=None,meta={})
     ret['meta']=meta
     return ret
 
@@ -161,15 +166,15 @@ if __name__== '__main__':
    tasks_dir='m2d-1/tasks'
    
    create_path(dst_dir)
-   ret1=mechanics2d_from_directory(task_dir,dst_dir,prop='elc_energy', code= 'vasp')
+   ret1=mechanics2d_parser(task_dir,dst_dir,prop='elc_energy', code= 'vasp')
    print(ret1.keys())
    print(ret1['meta'])
    #print(ret1['meta'])
-   ret2=mechanics2d_from_directory(task_dir,dst_dir,prop='elc_stress', code= 'vasp')
-   ret3=mechanics2d_from_directory(task_dir,dst_dir,prop='ssc_stress', code= 'vasp')
+   ret2=mechanics2d_parser(task_dir,dst_dir,prop='elc_stress', code= 'vasp')
+   ret3=mechanics2d_parser(task_dir,dst_dir,prop='ssc_stress', code= 'vasp')
    #print(ret3['stress_strain'])
    root_meta={}
    ret=Mechanics2d(elc2nd_stress=Elc2nd2d(**ret2),elc2nd_energy=Elc2nd2d(**ret1),stress_strain=StressStrain(**ret3),**root_meta)
-   dumpfn(jsanitize(ret),'ret.json')
-   dumpfn(jsanitize(Elc2nd2d(**ret1)),'r1.json')
+   dumpfn(jsanitize(ret),'ret.json',indent=4)
+   dumpfn(jsanitize(Elc2nd2d(**ret1)),'r1.json',indent=4)
  

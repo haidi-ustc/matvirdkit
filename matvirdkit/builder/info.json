@@ -1,6 +1,6 @@
 {
     "parameters": {
-        "dataset": "mech2d",
+        "database": "mech2d",
         "material_id": null,
         "root_dir": null,
         "dimension": 2

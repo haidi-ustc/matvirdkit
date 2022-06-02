@@ -8,16 +8,21 @@ from matvirdkit.model.utils import create_path
 from matvirdkit.model.vasp.task import TaskDocument as VaspTaskDocument
 from matvirdkit.model.utils import sha1encode,task_tag
 
-def VaspTask(task_dir,root_dir=REPO_DIR,**kwargs):
+def VaspTask(task_dir,repo_dir=REPO_DIR,**kwargs):
       
+    if os.path.isdir(repo_dir):
+       pass
+    else:
+       create_path(repo_dir,backup=False) 
     log.info('Start')
     pwd=os.getcwd()
     log.debug('Current dir: %s'%pwd)
     log.debug('Parsing Task from : %s'%task_dir)
-    os.chdir(root_dir)
+    os.chdir(repo_dir)
     task_id = str(uuid4())
     log.info('Temperory task id is : %s'%task_id)
-    out_dir=os.path.join('tasks',task_id)
+    # tasks-->vasp-->
+    out_dir=os.path.join('tasks','vasp',task_id)
 
     log.debug('Temperory dir: %s'%(out_dir))
     create_path(out_dir)
@@ -29,7 +34,7 @@ def VaspTask(task_dir,root_dir=REPO_DIR,**kwargs):
     encode=sha1encode(td['input'])
     log.info('Self-encode task id is : %s'%encode)
     td['task_id']=encode
-    encode_dir=os.path.join('tasks',encode)
+    encode_dir=os.path.join('tasks','vasp',encode)
     if os.path.isdir(encode_dir):
        log.debug('Delete temp. dir: %s'%(out_dir))
        shutil.rmtree(out_dir)

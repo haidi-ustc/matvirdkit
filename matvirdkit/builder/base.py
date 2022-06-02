@@ -14,7 +14,7 @@ from matvirdkit.model.utils import jsanitize
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Tuple, Optional, Union, Iterator, Set, Sequence, Iterable
 from pymatgen.core import Structure
-from matvirdkit import log,REPO_DIR 
+from matvirdkit import log,REPO_DIR,DATASETS_DIR
 from matvirdkit.model.utils import jsanitize,create_path,sha1encode
 #from matvirdkit.model.electronic import EMC,Bandgap,Mobility,Workfunction,ElectronicStructureDoc
 from matvirdkit.model.properties import PropertyOrigin
@@ -38,17 +38,17 @@ __author__ = "Matvird"
 def function_name():
     return inspect.stack()[1][3]
 
-supported_dataset = ['bms', 'mech2d', 'npr2d', 'penta',  'rashba', 'carbon2d', 'carbon3d', 'raman' ]
+supported_database = ['bms', 'mech2d', 'npr2d', 'penta',  'rashba', 'carbon2d', 'carbon3d', 'raman' ]
 DocKeys = ['electronic', 'magnetism', 'stability', 'thermo', 'xrd', 'mechanics2d', 'meta', 'source']
 
-class Builder(metaclass=ABCMeta):
-    def __init__(self, material_id : str, dataset :str , dimension = None, root_dir=None ):
+class Builder():
+    def __init__(self, material_id : str, database :str , dimension = None, root_dir=None ):
         self.material_id = material_id
-        assert dataset in supported_dataset
-        self.dataset = dataset
+        assert database in supported_database
+        self.database = database
         self.root_dir =  root_dir if root_dir else REPO_DIR
-        self.work_dir =  os.path.join(self.root_dir,dataset,material_id)
-        self.mech_dir =  os.path.join(self.root_dir,dataset,material_id,'mechanics')
+        self.work_dir =  os.path.join(DATASETS_DIR,database,material_id)
+        self.mech_dir =  os.path.join(DATASETS_DIR,database,material_id,'mechanics')
         if os.path.isdir(self.work_dir):
            pass
         else:
@@ -106,7 +106,8 @@ class Builder(metaclass=ABCMeta):
            self._registered_doc.append(value)
 
     def save_doc(self,**kwargs):
-        dumpfn(self.get_doc(),self.material_id+'.json',**kwargs)
+        dumpfn(self.get_doc(),
+               os.path.join(self.work_dir,self.material_id+'.json'),**kwargs)
 
     def get_doc(self,json=True) -> Dict:
         ret =   { 
@@ -601,7 +602,7 @@ class Builder(metaclass=ABCMeta):
     def as_dict(self):
         init_args = {
             "material_id": self.material_id,
-            "dataset": self.dataset,
+            "database": self.database,
             'dimension': self.dimension
         }
         return {"@module": self.__class__.__module__,
@@ -631,7 +632,7 @@ class Builder(metaclass=ABCMeta):
         calc_type=''
         if code=='vasp':
            task_id,calc_type = VaspTask( task_dir = task_dir,
-                                          root_dir = self.root_dir,
+                                          repo_dir = self.root_dir,
                                           **kwargs)
          
         return task_id, calc_type
@@ -707,13 +708,13 @@ class Builder(metaclass=ABCMeta):
     def from_file(cls,fname='info.json'):
         infos=loadfn(fname)
         parameters = infos.pop('parameters')
-        dataset = parameters['dataset'] 
+        database = parameters['database'] 
         dimension = parameters['dimension'] 
         material_id = parameters['material_id'] if parameters['material_id']  else 'm2d-2'
         root_dir = parameters['root_dir'] 
         f_structure = infos.pop('structure')['filename']
         #f_structure = infos['structure']['filename']
-        builder=cls(material_id = material_id, dataset = dataset, dimension=dimension, root_dir= root_dir)
+        builder=cls(material_id = material_id, database = database, dimension=dimension, root_dir= root_dir)
         builder.set_structure(fname=f_structure)
         builder.set_StructureDoc()
         for key in infos.keys():
@@ -744,4 +745,4 @@ if __name__ == '__main__':
    builder=Builder.from_file(fname='info.json')
    #doc=builder.get_doc()
    #dumpfn(doc,'doc.json',indent=4)
-   builder.save_doc()
+   builder.save_doc(indent=4)
