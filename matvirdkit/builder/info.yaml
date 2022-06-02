@@ -56,6 +56,16 @@ magnetism:
         - task_dir: /home/wang/dev/mvd-dev/tests_files/scf
           code: vasp
         meta: {}
+bms:
+  GGA+U:
+    delta_1: 0.1
+    delta_2: 0.1
+    delta_3: 0.1
+    provenance:
+      bms:
+        task_infos:
+        - task_dir: /home/wang/dev/mvd-dev/tests_files/scf
+          code: vasp
 electronic:
   GGA-PBE:
     bandgap:
@@ -125,19 +135,16 @@ mechanics2d:
       task_dir: /home/wang/dev/mvd-dev/tests_files/alpha-P-R
     provenance:
       elc2nd_stress:
-        task_infos:
-        - task_dir: /home/wang/dev/mvd-dev/tests_files/alpha-P-R
-          code: vasp
+        task_dir: /home/wang/dev/mvd-dev/tests_files/alpha-P-R
+        code: vasp
         meta: {}
       elc2nd_energy:
-        task_infos:
-        - task_dir: /home/wang/dev/mvd-dev/tests_files/alpha-P-R
-          code: vasp
+        task_dir: /home/wang/dev/mvd-dev/tests_files/alpha-P-R
+        code: vasp
         meta: {}
       stress_strain:
-        task_infos:
-        - task_dir: /home/wang/dev/mvd-dev/tests_files/alpha-P-R
-          code: vasp
+        task_dir: /home/wang/dev/mvd-dev/tests_files/alpha-P-R
+        code: vasp
         meta: {}
 stability:
   GGA-PBE:

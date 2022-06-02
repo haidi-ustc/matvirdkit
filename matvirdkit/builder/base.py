@@ -310,11 +310,11 @@ class Builder(metaclass=ABCMeta):
     def get_bms(self) -> Dict:
         return self._bms
 
-    def set_Bms(self ) -> None:
+    def set_BmsDoc(self ) -> None:
         self._BmsDoc= BMSDoc(bms=self.get_bms())
         self.registery_doc(function_name().split('_')[-1])
 
-    def get_BmsDoc(self) -> Union[Dict ,BmsDoc]:
+    def get_BmsDoc(self) -> Union[Dict ,BMSDoc]:
         return self._BmsDoc
 
     #-----------------magnetism--------------------

@@ -93,6 +93,23 @@
             }
         }
     },
+    "bms": {
+        "GGA+U": {
+            "delta_1": 0.1,
+            "delta_2": 0.1,
+            "delta_3": 0.1,
+            "provenance": {
+                "bms": {
+                    "task_infos": [
+                        {
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "code": "vasp"
+                        }
+                    ]
+                }
+            }
+        }
+    },
     "electronic": {
         "GGA-PBE": {
             "bandgap": {
@@ -200,17 +217,17 @@
             "provenance": {
                 "elc2nd_stress": {
                     "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
-                    "code":"vasp",
+                    "code": "vasp",
                     "meta": {}
                 },
                 "elc2nd_energy": {
                     "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
-                    "code":"vasp",
+                    "code": "vasp",
                     "meta": {}
                 },
                 "stress_strain": {
-                     "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
-                    "code":"vasp",
+                    "task_dir": "/home/wang/dev/mvd-dev/tests_files/alpha-P-R",
+                    "code": "vasp",
                     "meta": {}
                 }
             }
@@ -219,7 +236,9 @@
     "stability": {
         "GGA-PBE": {
             "phonon_stability": {
-                "from_json": { "max_hessian": 0.1 }
+                "from_json": {
+                    "max_hessian": 0.1
+                }
             },
             "stiff_stability": {
                 "from_directory": null
