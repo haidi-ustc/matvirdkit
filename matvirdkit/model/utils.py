@@ -243,14 +243,14 @@ def transfer_file(fname, src_path, dst_path, rename = True, path_type = 'base', 
               dst_fname = dst_fname.replace(dst_path,'')
 
               if path_type == 'base':
-                  return dst_fname[1:] + '.' + compression
+                  return os.path.basename(dst_fname)  + '.' + compression
               elif path_type == 'relative':
                   return os.path.join(dst_path,dst_fname[1:] + '.' + compression)
               else:
                   return os.path.abspath(os.path.join(dst_path,dst_fname[1:] + '.' + compression))
            else:
               if path_type == 'base':
-                  return dst_fname[1:] 
+                  return os.path.basename(dst_fname)
               elif path_type == 'relative':
                   return os.path.join(dst_path,dst_fname[1:] )
               else:

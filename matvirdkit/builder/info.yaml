@@ -74,8 +74,14 @@ electronic:
     emc: {}
     mobility: {}
     workfunction: {}
-    band: {}
-    dos: {}
+    band:
+      from_directory:
+        task_dir: /home/wang/dev/mvd-dev/tests_files/dos
+        code: vasp
+    dos:
+      from_directory:
+        task_dir: /home/wang/dev/mvd-dev/tests_files/dos
+        code: vasp
     provenance:
       dos:
         task_infos:

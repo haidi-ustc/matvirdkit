@@ -16,7 +16,7 @@ from typing import Dict, List, Tuple, Optional, Union, Iterator, Set, Sequence, 
 from pymatgen.core import Structure
 from matvirdkit import log,REPO_DIR 
 from matvirdkit.model.utils import jsanitize,create_path,sha1encode
-from matvirdkit.model.electronic import EMC,Bandgap,Mobility,Workfunction,ElectronicStructureDoc
+#from matvirdkit.model.electronic import EMC,Bandgap,Mobility,Workfunction,ElectronicStructureDoc
 from matvirdkit.model.properties import PropertyOrigin
 from matvirdkit.model.thermo import Thermo,ThermoDoc
 from matvirdkit.model.xrd import Xrd,XrdDoc
@@ -30,6 +30,7 @@ from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin
 from matvirdkit.model.electronic import Workfunction, Bandgap, EMC, Mobility, ElectronicStructureDoc,ElectronicStructure
 from matvirdkit.builder.readstructure import structure_from_file
 from matvirdkit.builder.task import VaspTask
+from matvirdkit.builder.vasp.electronic_structure import VaspElectronicStructure
 from matvirdkit.builder.mechanics import mechanics2d_parser
 __version__ = "0.1.0"
 __author__ = "Matvird"
@@ -79,8 +80,8 @@ class Builder(metaclass=ABCMeta):
 
         self._properties   = {}
 
-        self._doses=  []
-        self._bands=  []
+        self._dos =  {}
+        self._band =  {}
 
         self._StructureDoc   = {}
         self._ThermoDoc   = {}
@@ -231,15 +232,35 @@ class Builder(metaclass=ABCMeta):
         log.debug('Func name: set_%s()'%func_name) 
         for label in infos.get(func_name,{}).keys():
             info=infos[func_name].get(label,{})
-            bandgap=Bandgap(**info.get('bandgap',{}))
-            emc=EMC(**info.get('emc',{}))
-            mobility=Mobility(**info.get('mobility',{}))
-            workfunction=Workfunction(**info.get('workfunction',{}))
-            band=DataFigure(**info.get('band',{}))
-            dos=DataFigure(**info.get('dos',{}))
-            description=info.get('description','')
-            root_meta=info.get('meta',{})
-            #prov=info.get('provenance',{})
+            bandgap=Bandgap(**info.pop('bandgap',{}))
+            emc=EMC(**info.pop('emc',{}))
+            mobility=Mobility(**info.pop('mobility',{}))
+            workfunction=Workfunction(**info.pop('workfunction',{}))
+            band=DataFigure(**info.pop('band',{}))
+            
+            d_dos = info.pop("dos",{})
+            if "from_json" in d_dos.keys():
+                dos=DataFigure(**d_dos["from_json"])
+            elif "from_directory" in d_dos.keys():
+                task_dir=d_dos["from_directory"].pop("task_dir","")
+                code=d_dos["from_directory"].pop("code","")
+                mode=d_dos["from_directory"].pop("mode","manual")
+                prefix=d_dos["from_directory"].pop("prefix",self.material_id)
+                if task_dir:
+                   self.set_dos(task_dir, code= code,  
+                               auto = True if mode=='auto' else False,
+                               prefix=prefix,
+                               **d_dos["from_directory"])
+                   dos=self.get_dos()
+                   if dos:
+                      pass
+                   else:
+                      dos=DataFigure({})
+                else:
+                   dos=DataFigure({})
+
+            description=info.pop('description','')
+            root_meta=info.pop('meta',{})
             prov=info.pop('provenance',{})
             provenance=self._get_provenance(prov)
             self._electronicstructure  [label] = ElectronicStructure(provenance=provenance,
@@ -403,21 +424,25 @@ class Builder(metaclass=ABCMeta):
         return self._MetaDoc
 
     #------------------------------------------------
-    def set_dos(self,path, label='',  code= 'vasp', auto = False, **kwargs):
+    def set_dos(self, task_dir, code= 'vasp', auto = False, prefix='', **kwargs):
         d={}
         if code.lower() =='vasp':
            if auto:
-              electronic_structure=ElectronicStructure(path,**kwargs)
+              electronic_structure=VaspElectronicStructure(task_dir,**kwargs)
               d=electronic_structure.get_dos_auto(self.work_dir)
            else:
-              d=ElectronicStructure(path,**kwargs).get_dos_manually(self.material_id,src_path=path,dst_path=self.work_dir)
+              d=VaspElectronicStructure.get_dos_manually(
+                                                     prefix=prefix,
+                                                     src_dir=task_dir,
+                                                     dst_dir=self.work_dir,
+                                                     **kwargs)
 
         elif code.lower() == 'siesta':
            pass
-        self._doses.append({label+'-'+code:d})
+        self._dos = d
 
     def get_dos(self):
-        return self._doses   
+        return self._dos
 
     def get_band(self):
         return self._bands   

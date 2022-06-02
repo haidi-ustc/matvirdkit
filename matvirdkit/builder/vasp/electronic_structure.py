@@ -5,13 +5,14 @@ from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.vasp import Vasprun,Incar,Outcar,Oszicar,Potcar
 from pymatgen.electronic_structure.dos import  DOS,Dos
 from matvirdkit.model.utils import transfer_file
+from matvirdkit.model.common import DataFigure,JFData
 
-class ElectronicStructure(object):
+class VaspElectronicStructure(object):
         
-    def __init__(self,workpath, 
+    def __init__(self,task_dir, 
         parse_projected_eigen=False,
         parse_potcar_file=True):
-        self.workpath=workpath
+        self.task_dir=task_dir
         self.parse_projected_eigen = parse_projected_eigen
         self.parse_potcar_file = parse_potcar_file
         self._vr= None
@@ -20,7 +21,7 @@ class ElectronicStructure(object):
         self._set_vasprun()
 
     def _set_vasprun(self,filename='vasprun.xml'):
-        fname=os.path.join(self.workpath,filename)
+        fname=os.path.join(self.task_dir,filename)
         try:
             vr = Vasprun(fname, parse_potcar_file = self.parse_potcar_file,
                                 parse_projected_eigen = self.parse_projected_eigen)
@@ -68,24 +69,28 @@ class ElectronicStructure(object):
         return self._band.as_dict()
 
     @staticmethod
-    def get_dos_manually(material_id,src_path,dst_path,abs_path=False):
-        src_fname=material_id+'-dos.json'
-        src_figname=material_id+'.png'
-        dst_fname=transfer_file(src_fname,src_path,dst_path, abs_path=abs_path,compress = False)
-        dst_figname=transfer_file(src_figname,src_path,dst_path, abs_path=abs_path)
-        return {'j_id': dst_fname, 'f_id':dst_figname}
-        
+    def get_dos_manually(prefix,src_dir,dst_dir,abs_path=False,meta={}):
+        src_json_fname=prefix+'-dos.json'
+        src_fig_name=prefix+'-dos.png'
+        dst_json_name=transfer_file(src_json_fname,src_dir,dst_dir, compress = False)
+        dst_fig_name=transfer_file(src_fig_name,src_dir,dst_dir, compress=False)
+        data=JFData(description='dos data', json_data= {},json_file_name = dst_json_name, json_id=None, meta=meta)
+        fig=JFData(description='dos fig', file_fmt='png', file_name = dst_fig_name, json_id=None, meta=meta)
+        return DataFigure(data=[data],figure=fig)
+ 
     @staticmethod
-    def get_band_manually(material_id,src_path,dst_path,abs_path=True):
-        src_fname=material_id+'-band.json'
-        src_figname=material_id+'.png'
-        dst_fname=transfer_file(src_fname,src_path,dst_path, abs_path= abs_path, compress = False)
-        dst_figname=transfer_file(src_figname,src_path,dst_path,abs_path= abs_path)
-        return {'j_id': dst_fname, 'f_id':dst_figname}
+    def get_band_manually(prefix,src_dir,dst_dir,abs_path=False,meta={}):
+        src_json_fname=prefix+'-band.json'
+        src_fig_name=prefix+'-band.png'
+        dst_json_name=transfer_file(src_json_fname,src_dir,dst_dir, compress = False)
+        dst_fig_name=transfer_file(src_fig_name,src_dir,dst_dir, compress=False)
+        data=JFData(description='band data', json_data= {},json_file_name = dst_json_name, json_id=None, meta=meta)
+        fig=JFData(description='band fig', file_fmt='png', file_name = dst_fig_name, json_id=None, meta=meta)
+        return DataFigure(data=[data],figure=fig)
 
 
 if __name__=='__main__':
-   material_id='mp-755811'
-   dos=ElectronicStructure.get_dos_manually(material_id,'dosdata','dataset/4',abs_path=False)
+   prefix='mp-755811'
+   dos=VaspElectronicStructure.get_dos_manually(prefix,'mp-755811/dos','dataset/4',abs_path=False)
    print(dos)
    

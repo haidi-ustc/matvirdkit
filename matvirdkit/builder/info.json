@@ -119,13 +119,21 @@
             "emc": {},
             "mobility": {},
             "workfunction": {},
-            "band": {},
-            "dos": {},
+            "band": {
+            },
+            "dos": {
+                "from_directory": {
+                    "task_dir": "/home/wang/dev/mvd-dev/tests_files/mp-755811",
+                    "prefix":"mp-755811",
+                    "mode": "manual",
+                    "code": "vasp"
+                }
+            },
             "provenance": {
                 "dos": {
                     "task_infos": [
                         {
-                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/scf",
+                            "task_dir": "/home/wang/dev/mvd-dev/tests_files/mp-755811",
                             "code": "vasp"
                         }
                     ],
