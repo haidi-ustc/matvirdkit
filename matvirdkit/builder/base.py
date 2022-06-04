@@ -29,7 +29,7 @@ from matvirdkit.model.mechanics import Mechanics2d,Mechanics2dDoc
 from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin
 from matvirdkit.model.electronic import Workfunction, Bandgap, EMC, Mobility, ElectronicStructureDoc,ElectronicStructure
 from matvirdkit.builder.readstructure import structure_from_file
-from matvirdkit.builder.task import VaspTask
+from matvirdkit.builder.task import GeneralTask,VaspTask
 from matvirdkit.builder.vasp.electronic_structure import VaspElectronicStructure
 from matvirdkit.builder.mechanics import mechanics2d_parser
 __version__ = "0.1.0"
@@ -630,11 +630,15 @@ class Builder():
     def encode_task(self,task_dir, code='vasp', **kwargs ):
         task_id=''
         calc_type=''
-        if code=='vasp':
-           task_id,calc_type = VaspTask( task_dir = task_dir,
-                                          repo_dir = self.root_dir,
-                                          **kwargs)
-         
+        try:
+           gt=GeneralTask(task_dir=task_dir,code=code,**kwargs)
+           task_id, calc_type=gt.get_task()
+        except:
+           pass
+        #if code=='vasp':
+        #   task_id,calc_type = VaspTask( task_dir = task_dir,
+        #                                  repo_dir = self.root_dir,
+        #                                  **kwargs)
         return task_id, calc_type
 
     def set_task(self, task_id , code= 'vasp', calc_type = '' , description='') -> None:

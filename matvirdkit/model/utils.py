@@ -264,11 +264,14 @@ def transfer_file(fname, src_path, dst_path, rename = True, path_type = 'base', 
        except SameFileError:
           pass
 
-def sepline(ch='-',sp='-'):
+def sepline(ch='-',sp='-',std=True):
     r'''
     seperate the output by '-'
     '''
-    print(ch.center(Len,sp))
+    if std:
+       print(ch.center(Len,sp))
+    else:
+       return ch.center(Len,sp)
 
 def box_center(ch='',fill=' ',sp="|"):
     r'''

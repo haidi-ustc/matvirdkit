@@ -263,16 +263,16 @@ class TaskDocument(StructureMetadata):
         f_outputs :  List[str] = [],
         **kwargs
     ) -> "TaskDocument":
-        if task_tag(task_dir,status='check'):
-           tag=loadfn(os.path.join(task_dir,'tag.json'))
-           f_task=os.path.join(tag['path'],'task.json')
-           if os.path.isfile(f_task):
-              _dtask=loadfn(os.path.join(tag['path'],'task.json'),cls=None)
-              _dtask.update(kwargs)
-              log.info('Skip parsing !!!')
-              return cls(**_dtask)
-           else:
-              pass
+       # if task_tag(task_dir,status='check'):
+       #    tag=loadfn(os.path.join(task_dir,'tag.json'))
+       #    f_task=os.path.join(tag['path'],'task.json')
+       #    if os.path.isfile(f_task):
+       #       _dtask=loadfn(os.path.join(tag['path'],'task.json'),cls=None)
+       #       _dtask.update(kwargs)
+       #       log.info('Skip parsing !!!')
+       #       return cls(**_dtask)
+       #    else:
+       #       pass
 
         f_inputs = f_inputs if f_inputs else ['INCAR','KPOINTS','POTCAR','POSCAR'],
         f_outputs = f_outputs if f_outputs else  ['vasprun.xml','OSZICAR','OUTCAR','CONTCAR']
