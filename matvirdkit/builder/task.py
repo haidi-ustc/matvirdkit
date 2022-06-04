@@ -8,6 +8,26 @@ from matvirdkit.model.utils import create_path
 from matvirdkit.model.vasp.task import TaskDocument as VaspTaskDocument
 from matvirdkit.model.utils import sha1encode,task_tag
 
+
+class Task()：
+    def __init__(self,task_dir,code,task_id=None,repo_dir=None,**kwargs):
+        self.task_dir= task_dir
+        self.code = code
+        self.task_id = task_id if task_id else str(uuid4()) 
+        self._repo_dir = repo_dir if repo_dir else  REPO_DIR
+        self.dst_dir = os.path.join(self._repo_dir,code)
+        self.kwargs = kwargs
+        self._set_dst_dir()
+
+    def _set_dst_dir(self):
+        if os.path.isdir(self.dst_dir):
+           pass
+        else:
+           create_path(self.dst_dir,backup=False) 
+    def get_task(self):
+        pass
+
+
 def VaspTask(task_dir,repo_dir=REPO_DIR,**kwargs):
       
     if os.path.isdir(repo_dir):

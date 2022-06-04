@@ -5,7 +5,7 @@ from typing import ClassVar, Dict, List, Optional, Union, Tuple
 from pydantic import BaseModel, Field, validator
 from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin
 from matvirdkit.model.utils import jsanitize,ValueEnum
-from matvirdkit.model.common import MatvirdBase
+from matvirdkit.model.common import MatvirdBase,DataFigure
 
 class Order(ValueEnum):
     FM : str = 'FM'
