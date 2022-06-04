@@ -22,6 +22,7 @@ class Magnetism(MatvirdBase):
     # ref https://cmrdb.fysik.dtu.dk/c2db/row/Br2Cr2O2-40d95997a4f9
     #{'Ez-Ex': 0.12 , 'Ez-Ey': 0.05}
     magnetic_anisotropy: Dict[str,float] = Field({},description='mgnetic anisotropy energy')
+    spin_texture:  DataFigure = Field(None, description='hold the constant energy surface spin textures in a given system.')
 
 class MagnetismDoc(BaseModel):
     """
