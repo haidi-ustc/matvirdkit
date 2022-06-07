@@ -10,7 +10,7 @@ from matvirdkit.model.mechanics import Mechanics2d, Mechanics2dDoc,Mechanics2dSu
 from matvirdkit.model.common import DataFigure,JFData
 from matvirdkit.model.utils import create_path,transfer_file,jsanitize
 from matvirdkit import REPO_DIR as repo_dir
-from matvirdkit.builder.task import VaspTask
+#from matvirdkit.builder.task import VaspTask
 
 def mechanics2d_parser(task_dir,dst_dir,prop, code= 'vasp'):
 

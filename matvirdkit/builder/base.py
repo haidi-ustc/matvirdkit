@@ -29,9 +29,11 @@ from matvirdkit.model.mechanics import Mechanics2d,Mechanics2dDoc
 from matvirdkit.model.provenance import LocalProvenance,GlobalProvenance,Origin
 from matvirdkit.model.electronic import Workfunction, Bandgap, EMC, Mobility, ElectronicStructureDoc,ElectronicStructure
 from matvirdkit.builder.readstructure import structure_from_file
-from matvirdkit.builder.task import GeneralTask,VaspTask
+from matvirdkit.builder.task import GeneralTask #,VaspTask
 from matvirdkit.builder.vasp.electronic_structure import VaspElectronicStructure
 from matvirdkit.builder.mechanics import mechanics2d_parser
+from matvirdkit.builder.id import get_snowflake_id
+
 __version__ = "0.1.0"
 __author__ = "Matvird"
 
@@ -714,7 +716,7 @@ class Builder():
         parameters = infos.pop('parameters')
         database = parameters['database'] 
         dimension = parameters['dimension'] 
-        material_id = parameters['material_id'] if parameters['material_id']  else 'm2d-2'
+        material_id = parameters['material_id'] if parameters['material_id']  else get_snowflake_id('m2d')
         root_dir = parameters['root_dir'] 
         f_structure = infos.pop('structure')['filename']
         #f_structure = infos['structure']['filename']
@@ -731,7 +733,7 @@ class Builder():
                try:
                    func_set = getattr(builder, 'set_'+key)
                except AttributeError:
-                   log.info('Bound method: %s not found, skip '%('set_'+key+'()'))
+                   log.info('class method: %s not found, skip '%('set_'+key+'()'))
                    continue
                func_set(infos)
                Func_set = getattr(builder, 'set_'+key.capitalize()+'Doc' )
