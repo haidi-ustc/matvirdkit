@@ -3,7 +3,8 @@
         "database": "mech2d",
         "material_id": null,
         "root_dir": null,
-        "dimension": 2
+        "dimension": 2,
+        "prefix": "m2d"
     },
     "structure": {
         "filename": "/home/wang/dev/mvd-dev/tests_files/relax/CONTCAR"

@@ -42,6 +42,7 @@ def function_name():
 
 supported_database = ['bms', 'mech2d', 'npr2d', 'penta',  'rashba', 'carbon2d', 'carbon3d', 'raman' ]
 DocKeys = ['electronic', 'magnetism', 'stability', 'thermo', 'xrd', 'mechanics2d', 'meta', 'source']
+default_prefix = {"bms": 'bms', "mech2d":"m2d", "npr2d":"npr2d", "carbon2d":'c2d',"carbon3d":'c3d', 'raman':'rm'}
 
 class Builder():
     def __init__(self, material_id : str, database :str , dimension = None, root_dir=None ):
@@ -716,7 +717,8 @@ class Builder():
         parameters = infos.pop('parameters')
         database = parameters['database'] 
         dimension = parameters['dimension'] 
-        material_id = parameters['material_id'] if parameters['material_id']  else get_snowflake_id('m2d')
+        prefix = parameters.get('prefix',default_prefix[database])
+        material_id = parameters['material_id'] if parameters['material_id']  else get_snowflake_id(prefix)
         root_dir = parameters['root_dir'] 
         f_structure = infos.pop('structure')['filename']
         #f_structure = infos['structure']['filename']
@@ -745,6 +747,10 @@ class Builder():
         builder.set_properties()
         builder.update_properties(key='CustomerDoc',val=infos.get('customer',{}))
         return builder
+
+def main(fname='info.json'):
+    builder=Builder.from_file(fname=fname)
+    builder.save_doc()
 
 if __name__ == '__main__':
    from matvirdkit.model.utils import test_path

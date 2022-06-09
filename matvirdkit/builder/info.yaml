@@ -3,6 +3,7 @@ parameters:
   material_id:
   root_dir:
   dimension: 2
+  prefix: m2d
 structure:
   filename: /home/wang/dev/mvd-dev/tests_files/relax/CONTCAR
 thermo:
