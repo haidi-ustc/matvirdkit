@@ -93,6 +93,32 @@ such as "GGA-PBE", "GW", "PBE+U".
  
   Currently, we only support the VASP task. 
 
+### usage
+
+The command line operation for preparing datasets and  database operating are supported. 
+
+```
+usage: mvdkit [-h] [-v] {build,create} ...
+
+Desctiption:
+------------
+mvdkit is collection of toolkits for preparing and quering the data of matvird database.
+To see the options for the sub-commands, type "mvdkit sub-command -h".
+
+positional arguments:
+  {build,create}
+    build         Generating data set for matvird.
+    create        Write the data into database
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -v, --version   Display version
+
+```
+
+To prepare the dataset for specific database, you have to write your own `info.json` firstly, and 
+then run the cmd `mvdkit build -c info.json`
+
 
 ### repository
 
