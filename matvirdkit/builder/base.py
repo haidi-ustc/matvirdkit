@@ -17,7 +17,7 @@ from pymatgen.core import Structure
 from matvirdkit import log,REPO_DIR,DATASETS_DIR
 from matvirdkit.model.utils import jsanitize,create_path,sha1encode
 #from matvirdkit.model.electronic import EMC,Bandgap,Mobility,Workfunction,ElectronicStructureDoc
-from matvirdkit.model.properties import PropertyOrigin
+#from matvirdkit.model.properties import PropertyOrigin
 from matvirdkit.model.thermo import Thermo,ThermoDoc
 from matvirdkit.model.xrd import Xrd,XrdDoc
 from matvirdkit.model.stability import ThermoDynamicStability,PhononStability,StiffnessStability,StabilityDoc,Stability
@@ -625,7 +625,8 @@ class Builder():
             task_id,calc_type = self.encode_task(**task_info)
             if task_id:
                task_info['task_id'] = task_id
-               task_info['calc_type'] = calc_type
+               task_info['calc_type'] = str(calc_type)
+               log.debug(task_info)
                task=Task(**task_info)
                hash_id = sha1encode (task)
                self._tasks[hash_id]= task
