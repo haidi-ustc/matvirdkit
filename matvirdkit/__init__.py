@@ -14,6 +14,8 @@ try:
 except ImportError:
     __date__ = 'unkown'
 
+NAME="matvirdkit"
+SHORT_CMD="mvdkit"
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 #tm = time.strftime('%Y%m%d%H%M', time.localtime(time.time()))

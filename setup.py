@@ -53,7 +53,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
     entry_points={
-          'console_scripts': []
-#              'mvdkit = matvirdkit.builder.cli:main'],
+          'console_scripts': [
+              'mvdkit = matvirdkit.cli:main'],
  }
 )

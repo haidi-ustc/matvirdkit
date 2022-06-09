@@ -749,7 +749,8 @@ class Builder():
         builder.update_properties(key='CustomerDoc',val=infos.get('customer',{}))
         return builder
 
-def main(fname='info.json'):
+def main(args):
+    fname=args.config
     builder=Builder.from_file(fname=fname)
     builder.save_doc()
 
