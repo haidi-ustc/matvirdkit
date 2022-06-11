@@ -53,16 +53,20 @@ for _dir in [REPO_DIR,DATASETS_DIR,META_DIR,TASKS_DIR]:
        os.mkdir(_dir)
 
 API_KEY    = config('API_KEY',default='',cast=str)
-MONGODB_URI= config('MONGO_DATABASE_URI',default='',cast=str)  
+#MONGODB_URI= config('MONGO_DATABASE_URI',default='',cast=str)  
 
 log.info('Mode: %s'%DEBUG)
 log.info('Repository directory: %s'%REPO_DIR)
 log.info('API key: %s'%API_KEY)
-log.info('MongoDB :%s'%MONGODB_URI)
+#log.info('MongoDB :%s'%MONGODB_URI)
  
 EMAIL_HOST = config('EMAIL_HOST', default='localhost')
 EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_PASSWORD = config('EMAIL_PASSWORD', default='')
+EMAIL_USER = config('EMAIL_USER', default='')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
  
+MONGO_HOST = config('MONGO_HOST', default='localhost')
+MONGO_PORT = config('MONGO_PORT', default=27017, cast=int)
+MONGO_PASSWORD = config('MONGO_PASSWORD', default='')
+MONGO_USER = config('MONGO_USER', default='')
